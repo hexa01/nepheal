@@ -13,13 +13,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('specializations', function (Blueprint $table) {
-            $table->id();
-            $table->foreignIdFor(Doctor::class)->constrained()->cascadeOnDelete();
-            $table->enum('day', ['Sunday','Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']);
-            $table->time('start_time');
-            $table->time('end_time');
-            $table->Integer('slot_count')->nullable();
-            $table->enum('status',['available','unavailable'])->default('available');
+                        $table->id();
+            $table->string('name');
             $table->timestamps();
         });
     }
