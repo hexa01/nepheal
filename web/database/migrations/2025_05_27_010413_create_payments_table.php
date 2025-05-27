@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\Appointment;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -13,6 +14,11 @@ return new class extends Migration
     {
         Schema::create('payments', function (Blueprint $table) {
             $table->id();
+            $table->foreignIdFor(Appointment::class)->constrained()->cascadeOnDelete();
+            $table->string('pid')->nullable();
+            $table->float('amount');
+            $table->enum('status',['paid','unpaid'])->default('unpaid');
+            $table->string('payment_method')->nullable();
             $table->timestamps();
         });
     }
