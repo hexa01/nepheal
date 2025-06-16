@@ -25,7 +25,9 @@ class UserResource extends Resource
                     ->required(),
                 Forms\Components\TextInput::make('email')
                     ->email()
-                    ->unique(fn(callable $get) => $get('id') == null)
+                    // ->unique(fn(callable $get) => $get('id') == null)
+                    ->unique(ignoreRecord: true)
+
                     ->required(),
                     Forms\Components\Select::make('gender')
                     ->label('Gender')
@@ -61,7 +63,7 @@ class UserResource extends Resource
                 Forms\Components\TextInput::make('address'),
                 Forms\Components\TextInput::make('phone')
                 ->minLength(10)
-                ->unique(fn(callable $get) => $get('id') == null),
+                ->unique(ignoreRecord:true),
                 // Forms\Components\DateTimePicker::make('email_verified_at'),
                 Forms\Components\TextInput::make('password')
                 ->label("New password")
