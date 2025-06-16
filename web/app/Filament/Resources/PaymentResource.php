@@ -57,6 +57,7 @@ class PaymentResource extends Resource
     {
         return [
             'index' => Pages\ListPayments::route('/'),
+            'stripe' => Pages\PaymentPage::route('/stripe/{record}'),
         ];
     }
 }

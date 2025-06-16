@@ -11,6 +11,7 @@ use Filament\Support\Enums\ActionSize;
 use Filament\Tables\Table;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ActionGroup;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
 
@@ -75,10 +76,40 @@ class ListPayments extends ListRecords
                 //
             ])
             ->actions([
-                    Action::make('Pay')
+                ActionGroup::make([
+                    Action::make('Pay with eSewa')
+                        ->action(function ($record) {
+                            return redirect()->route('payment.esewa',$record);
+                        })
+                        ->icon('heroicon-o-currency-dollar')
+                        ->visible(fn ($record) => $record->payment_status !== 'paid')
+                        // ->button()
+                        ->color('success')
+                        ->label('Pay via eSewa')
+                        ->requiresConfirmation()
+                        ->tooltip('Click to pay via eSewa'),
+
+                    Action::make('Pay with Stripe')
+                        ->url(function($record) {
+
+                            $url = url('/admin/payments/stripe', ['payment' => $record]);
+                            return $url;
+                        })
+                        ->label('Pay via Stripe')
+                        ->tooltip('Click to pay via Stripe')
                     ->visible(fn($record) => $record->status !== 'paid')
+                    ->hidden(fn() => $user->role === 'doctor')
+                    ->icon('heroicon-m-credit-card')
                     ->size(ActionSize::Small)
+                    ->color('blue')
                     ->button(),
-            ]);
+                    ])
+                    ->tooltip('Pay')
+                    ->label('Pay')
+                    ->icon('heroicon-m-credit-card')
+                    ->size(ActionSize::Small)
+                    ->color('action')
+                    ->button()
+                    ]);
     }
 }
