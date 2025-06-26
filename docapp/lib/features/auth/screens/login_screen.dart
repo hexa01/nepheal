@@ -7,7 +7,7 @@ import '../../patient/screens/patient_dashboard.dart';
 import '../../doctor/screens/doctor_dashboard.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({Key? key}) : super(key: key);
+  const LoginScreen({super.key});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -31,7 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
 
     final authService = Provider.of<AuthService>(context, listen: false);
     final success = await authService.login(
-      _emailController.text.trim(),
+      _emailController.text.trim(), 
       _passwordController.text,
     );
 

@@ -21,8 +21,6 @@ class AuthService extends ChangeNotifier {
       // For now, we'll assume token is valid
       final userId = StorageService.getUserId();
       if (userId != null) {
-        // Create a basic user object from stored data
-        // In production, you might want to fetch fresh user data
         notifyListeners();
       }
     }
