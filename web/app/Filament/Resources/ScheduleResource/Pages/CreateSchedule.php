@@ -14,6 +14,5 @@ class CreateSchedule extends CreateRecord
     {
         return $this->getResource()::getUrl('index');
     }
-
 }
 

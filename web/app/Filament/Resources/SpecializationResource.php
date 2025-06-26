@@ -13,9 +13,9 @@ class SpecializationResource extends Resource
 
     protected static ?string $model = Specialization::class;
     protected static ?string $navigationLabel = 'Specialization';
-    // protected static ?string $navigationGroup = 'Specializations';
+    protected static ?string $navigationGroup = 'Specializations';
     protected static ?string $navigationIcon = 'heroicon-o-building-office';
-    // protected static ?int $navigationSort = 3;
+    protected static ?int $navigationSort = 3;
 
     public static function form(Form $form): Form
     {

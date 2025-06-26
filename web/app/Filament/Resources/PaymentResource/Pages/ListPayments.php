@@ -72,6 +72,36 @@ class ListPayments extends ListRecords
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])->defaultSort('status', 'desc')
+            // ->defaultSort('appointment.appointment_date', 'asc')
+            ->modifyQueryUsing(function (Builder $query) {
+                // Get the currently authenticated user
+                $user = User::find(Auth::user()->id);
+
+                // If the user is an admin, they can see all payments
+                if ($user->hasRole('admin')) {
+                    return $query;
+                }
+
+                // If the user is a doctor, only their appointment payments are shown
+                if ($user->hasRole('doctor')) {
+                    $appointments = Appointment::where('doctor_id', $user->doctor->id)->get();
+                    if ($appointments->isNotEmpty()) {
+                        $appointmentIds = $appointments->pluck('id');
+                        return $query->whereIn('appointment_id', $appointmentIds);
+                    }
+                }
+
+                // If the user is a patient, only their appointment payments are shown
+                if ($user->hasRole('patient')) {
+                    $appointments = Appointment::where('patient_id', $user->patient->id)->get();
+                    if ($appointments->isNotEmpty()) {
+                        $appointmentIds = $appointments->pluck('id');
+                        return $query->whereIn('appointment_id', $appointmentIds);
+                    }
+                }
+                //default
+                return $query->whereRaw('1 = 0');
+            })
             ->filters([
                 //
             ])

@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Auth;
 class AppointmentResource extends Resource
 {
     protected static ?string $model = Appointment::class;
+     protected static ?string $navigationGroup = 'Appointment Management';
     protected static ?string $navigationIcon = 'heroicon-o-calendar-date-range';
+    
     public static function form(Form $form): Form
     {
 

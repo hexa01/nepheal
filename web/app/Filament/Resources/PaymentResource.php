@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 class PaymentResource extends Resource
 {
     protected static ?string $model = Payment::class;
-
+     protected static ?string $navigationGroup = 'Appointment Management';
     protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
 
     public static function form(Form $form): Form
@@ -59,5 +59,10 @@ class PaymentResource extends Resource
             'index' => Pages\ListPayments::route('/'),
             'stripe' => Pages\PaymentPage::route('/stripe/{record}'),
         ];
+    }
+
+        public static function canCreate(): bool
+    {
+        return false;
     }
 }

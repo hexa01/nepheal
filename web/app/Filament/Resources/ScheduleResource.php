@@ -15,10 +15,16 @@ use Illuminate\Database\Eloquent\SoftDeletingScope;
 
 class ScheduleResource extends Resource
 {
-    protected static ?string $model = Schedule::class;
+       protected static ?string $model = Schedule::class;
+    protected static ?string $navigationIcon = 'heroicon-o-clock';
+    protected static ?string $navigationLabel = 'Schedules';
+    protected static ?string $navigationGroup = 'Schedules Management';
+    protected static ?int $navigationSort = 2;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
-
+        public static function resolveRecord($id)
+    {
+        return Schedule::with('doctor.user')->find($id);
+    }
 
     public static function getRelations(): array
     {
@@ -31,9 +37,9 @@ class ScheduleResource extends Resource
     {
         return [
             'index' => Pages\ListSchedules::route('/'),
-            'create' => Pages\CreateSchedule::route('/create'),
+            // 'create' => Pages\CreateSchedule::route('/create'),
             'view' => Pages\ViewSchedule::route('/{record}'),
-            'edit' => Pages\EditSchedule::route('/{record}/edit'),
+            // 'edit' => Pages\EditSchedule::route('/{record}/edit'),
         ];
     }
 }
