@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/services/auth_service.dart';
 import '../../auth/screens/login_screen.dart';
-import 'doctors_list_screen.dart'; // Add this import
+import 'doctors_list_screen.dart';
+import 'my_appointments_screen.dart';
 
 class PatientDashboard extends StatefulWidget {
   const PatientDashboard({super.key});
@@ -16,8 +17,8 @@ class _PatientDashboardState extends State<PatientDashboard> {
 
   final List<Widget> _screens = [
     const PatientHomeScreen(),
-    const DoctorsListScreen(), // Add this line
-    const PlaceholderScreen(title: 'Appointments'),
+    const DoctorsListScreen(),
+    const MyAppointmentsScreen(),
     const PatientProfileScreen(),
   ];
 
@@ -97,27 +98,6 @@ class PatientHomeScreen extends StatelessWidget {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-// Placeholder screen for features we haven't built yet
-class PlaceholderScreen extends StatelessWidget {
-  final String title;
-
-  const PlaceholderScreen({super.key, required this.title});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text(title),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-      ),
-      body: Center(
-        child: Text('$title features coming soon...'),
       ),
     );
   }
