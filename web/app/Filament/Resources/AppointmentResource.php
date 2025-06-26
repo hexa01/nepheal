@@ -125,7 +125,7 @@ class AppointmentResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+             MessageRelationManager::class,
         ];
     }
 

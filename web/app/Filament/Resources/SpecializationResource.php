@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SpecializationResource\Pages;
+use App\Filament\Resources\SpecializationResource\RelationManagers\DoctorsRelationManager;
 use App\Models\Specialization;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -32,7 +33,7 @@ class SpecializationResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            DoctorsRelationManager::class
         ];
     }
 
