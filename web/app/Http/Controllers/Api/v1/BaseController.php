@@ -12,19 +12,20 @@ use Illuminate\Support\Facades\Auth;
 
 class BaseController extends Controller
 {
-    public function successResponse($message, $result, $code = 200)
+    public function successResponse($message, $data=null, $code = 200)
     {
         return response()->json([
             'success' => true,
             'message' => $message,
-            'data' => $result,
+            'data' => $data,
         ], $code);
     }
-    public function errorResponse($error, $code = 400)
+    public function errorResponse($message, $code = 400)
     {
         return response()->json([
             'success' => false,
-            'error' => $error,
+            'message' => $message,
+            'data' => null,
         ], $code);
     }
 

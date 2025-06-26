@@ -30,10 +30,10 @@ class AppointmentController extends BaseController
     {
         if (Auth::user()->role == 'patient') {
             $id = Auth::user()->patient->id;
-            $appointments = Appointment::where('patient_id', $id)->orderBy('appointment_date', 'desc')->orderBy('start_time', 'asc')->get();
+            $appointments = Appointment::where('patient_id', $id)->orderBy('appointment_date', 'desc')->orderBy('slot', 'asc')->get();
         } elseif (Auth::user()->role == 'doctor') {
             $id = Auth::user()->doctor->id;
-            $appointments = Appointment::where('doctor_id', $id)->orderBy('appointment_date', 'desc')->orderBy('start_time', 'asc')->get();
+            $appointments = Appointment::where('doctor_id', $id)->orderBy('appointment_date', 'desc')->orderBy('slot', 'asc')->get();
         } elseif (Auth::user()->role == 'admin') {
             $appointments = Appointment::all();
         }
@@ -48,8 +48,14 @@ class AppointmentController extends BaseController
     /**
      * Create Appointment
      */
-    public function store(AppointmentRequest $request)
+    public function store(Request $request)
     {
+        $request->validate([
+            'doctor_id' => 'required|exists:doctors,id',
+            'appointment_date' => 'required|date|after_or_equal:' . Carbon::tomorrow()->toDateString(),
+            'slot' => 'required|date_format:H:i',
+            'patient_id' => 'nullable|exists:patients,id',
+        ]);
 
         if (!$doctor = Doctor::find($request->doctor_id)) {
             $this->errorResponse('The selected doctor id doesnt exist', 404);
@@ -73,13 +79,17 @@ class AppointmentController extends BaseController
             'patient_id' => $patientId,
             'doctor_id' => $request->doctor_id,
             'appointment_date' => $appointment_date,
-            'start_time' => $slot,
+            'slot' => $slot,
             'status' => 'booked',
         ]);
-        $price = 500;
+
+        $hourly_rate = $appointment->doctor->hourly_rate;
+        $slot_duration = 0.5; //in hours
+        $amount = intval($hourly_rate * $slot_duration);
+
         Payment::create([
             'appointment_id' => $appointment->id,
-            'amount' => $price,
+            'amount' => $amount,
             'status' => 'unpaid',
         ]);
         $data['appointment'] = $this->appointmentService->formatAppointment($appointment);
@@ -97,9 +107,6 @@ class AppointmentController extends BaseController
             return $this->errorResponse('Unauthorized access', 403);
         }
         $data['appointment'] = $this->appointmentService->formatAppointment($appointment);
-        if($appointment->status == 'completed'){
-            $data['doctor_message'] = $appointment->doctor_message;
-        }
         return $this->successResponse('Appointment information retrieved successfully.',$data);
     }
 
@@ -146,11 +153,9 @@ class AppointmentController extends BaseController
             return $this->errorResponse('This slot is not available', 404);
         }
 
-
-
         $appointment->update([
             'appointment_date' => $appointment_date,
-            'start_time' => $slot,
+            'slot' => $slot,
         ]);
         $data['appointment'] = $this->appointmentService->formatAppointment($appointment);
         return $this->successResponse('Appointment updated successfully.', $data);
@@ -194,37 +199,5 @@ class AppointmentController extends BaseController
         ]);
         $data['appointment'] = $this->appointmentService->formatAppointment($appointment);
         return $this->successResponse('Appointment status updated successfully.', $data);
-    }
-
-    /**
-     * Update Doctor Messsage of Completed Appointments
-     */
-    public function updateDoctorMessage(Request $request, string $id)
-    {
-        $doctor = Auth::user()->doctor;
-        $appointment = Appointment::find($id);
-
-        if (!$this->verify($appointment, 'doctor_id')) {
-            return $this->errorResponse('Unauthorized access', 403);
-        }
-        if ($appointment->status != 'completed') {
-            return $this->errorResponse('Cannot update message without completing appointment', 403);
-        }
-
-        $request->validate([
-            'doctor_message' => 'required|string|max:1000',
-        ]);
-        $appointment->update([
-            'doctor_message' => $request->doctor_message,
-        ]);
-        $data['appointment'] = [
-            'id' => $appointment->id,
-            'date' => $appointment->appointment_date,
-            'status' => $appointment->status,
-            'patient_id' => $appointment->patient_id,
-            'patient_name' => $appointment->patient->user->name,
-            'history' => $appointment->doctor_message,
-        ];
-        return $this->successResponse('Doctor message to the patient updated successfully.', $data);
     }
 }

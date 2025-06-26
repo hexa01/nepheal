@@ -33,21 +33,25 @@ class AppointmentService
             $available_slots[] = $start_time->format('H:i');
             $start_time->addMinutes(30);
         }
-        $booked_slots = Appointment::where('doctor_id', $doctor->id)->whereDate('appointment_date', $appointment_date)
-            ->pluck('start_time')->toArray();
-
+        $booked_slots = Appointment::where('doctor_id', $doctor->id)
+        ->whereDate('appointment_date', $appointment_date)
+        ->get()
+        ->pluck('slot')
+        ->map(fn($slot) => Carbon::parse($slot)->format('H:i'))
+        ->toArray();
         $available_slots = array_filter($available_slots, function ($slot) use ($booked_slots) {
             return !in_array($slot, $booked_slots);
         });
         return $available_slots;
     }
-    
+
+
     public function formatAppointment($appointment)
     {
         return [
             'id' => $appointment->id,
             'date' => Carbon::parse($appointment->appointment_date)->format('Y-m-d'),
-            'slot' => $appointment->start_time,
+            'slot' => $appointment->slot,
             'status' => $appointment->status,
             'doctor_id' => $appointment->doctor_id,
             'doctor_name' => $appointment->doctor->user->name,

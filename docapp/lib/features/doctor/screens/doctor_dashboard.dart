@@ -4,7 +4,7 @@ import '../../../shared/services/auth_service.dart';
 import '../../auth/screens/login_screen.dart';
 
 class DoctorDashboard extends StatelessWidget {
-  const DoctorDashboard({Key? key}) : super(key: key);
+  const DoctorDashboard({super.key});
 
   @override
   Widget build(BuildContext context) {

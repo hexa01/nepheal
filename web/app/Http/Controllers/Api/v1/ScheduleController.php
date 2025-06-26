@@ -12,96 +12,106 @@ use Illuminate\Support\Facades\Auth;
 class ScheduleController extends BaseController
 {
     /**
-     * Display my schedule(doctor).
+     * Display my schedule (doctor).
      */
     public function index()
     {
-        $schedules = Schedule::where('doctor_id', Auth::user()->doctor->id)->select('day', 'start_time', 'end_time')->get()
+        $doctorId = Auth::user()->doctor->id;
+
+        $schedules = Schedule::where('doctor_id', $doctorId)
+            ->select('day', 'start_time', 'end_time')
+            ->get()
             ->sortBy(function ($schedule) {
                 $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
                 return array_search($schedule->day, $days);
             });
+
         return $this->successResponse('Your schedules retrieved successfully', $schedules, 200);
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Store a newly created resource in storage. (Not implemented)
      */
     public function store(Request $request)
     {
-        //
+        return $this->errorResponse('Not implemented', 501);
     }
 
     /**
-     * Display the specified resource.
+     * Display the specified resource. (Not implemented)
      */
     public function show(string $id)
     {
-        //
+        return $this->errorResponse('Not implemented', 501);
     }
 
     /**
-     * Update my Schedule(doctor)
+     * Update my Schedule (doctor)
      */
     public function update(Request $request, string $day_name)
     {
         $request->validate([
             'start_time' => 'required|string|date_format:H:i',
-            'end_time' => 'required|string|date_format:H:i|after:start_time',
+            'end_time'   => 'required|string|date_format:H:i|after:start_time',
         ]);
+
         $day = ucfirst(strtolower($day_name));
+        $validDays = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-        $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-
-        if (!in_array($day, $days)) {
+        if (!in_array($day, $validDays)) {
             return $this->errorResponse('This is not a valid day', 404);
         }
 
         $doctor = Auth::user()->doctor;
-        $doctor_id = Auth::user()->doctor->id;
+        $doctorId = $doctor->id;
 
-        $appointment_dates = Appointment::where('doctor_id', $doctor_id)->whereDate('appointment_date', '>', now())->distinct()->pluck('appointment_date')->toArray();
-        $appointment_days = array_map(function ($date) {
+        // Check if appointments exist on this day in the future
+        $appointmentDates = Appointment::where('doctor_id', $doctorId)
+            ->whereDate('appointment_date', '>', now())
+            ->distinct()
+            ->pluck('appointment_date')
+            ->toArray();
+
+        $appointmentDays = array_map(function ($date) {
             return Carbon::parse($date)->englishDayOfWeek;
-        }, $appointment_dates);
-        if (in_array($day, $appointment_days)) {
-            return $this->errorResponse('Appointment exists in this day. You cant update a schedule on this day.', 403);
+        }, $appointmentDates);
+
+        if (in_array($day, $appointmentDays)) {
+            return $this->errorResponse('Appointment exists on this day. You can\'t update the schedule.', 403);
         }
 
-        $schedule = Schedule::where('doctor_id', $doctor_id)->where('day', $day)->first();
+        $schedule = Schedule::where('doctor_id', $doctorId)->where('day', $day)->first();
 
-        $start_time = Carbon::parse($request->start_time);
-        $end_time = Carbon::parse($request->end_time);
-        $duration = $start_time->diffInMinutes($end_time);
-
-        // $slots = $duration / 30;
-        $slots = intdiv($duration, 30);
-
-        if ($schedule) {
-            $start_time = Carbon::parse($request->start_time)->format('H:i');
-            $end_time = Carbon::parse($request->end_time)->format('H:i');
-            $schedule->update([
-                'start_time' => $start_time,
-                'end_time' => $end_time,
-                'slots' => $slots,
-            ]);
-            $data['schedule'] = [
-                'day_name' => $schedule->day,
-                'start_time' => $schedule->start_time,
-                'end_time' => $schedule->end_time,
-                'slots' => $schedule->slots,
-            ];
-            return $this->successResponse('Your schedule updated successfully', $data);
-        } else {
+        if (!$schedule) {
             return $this->errorResponse('Schedule not found', 404);
         }
+
+        $startTime = Carbon::parse($request->start_time);
+        $endTime = Carbon::parse($request->end_time);
+        $durationMinutes = $startTime->diffInMinutes($endTime);
+        $slots = intdiv($durationMinutes, 30);
+
+        $schedule->update([
+            'start_time' => $startTime->format('H:i'),
+            'end_time'   => $endTime->format('H:i'),
+            'slots'      => $slots,
+        ]);
+
+        $data['schedule'] = [
+            'day_name'   => $schedule->day,
+            'start_time' => $schedule->start_time,
+            'end_time'   => $schedule->end_time,
+            'slots'      => $schedule->slots,
+        ];
+
+        return $this->successResponse('Your schedule updated successfully', $data);
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Remove the specified resource from storage. (Not implemented)
      */
     public function destroy(string $id)
     {
-        //
+        return $this->errorResponse('Not implemented', 501);
     }
 }

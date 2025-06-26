@@ -31,8 +31,11 @@ class AppointmentService
             $start_time->addMinutes(30);
         }
         $booked_slots = Appointment::where('doctor_id', $doctor->id)
-            ->whereDate('appointment_date', $appointment_date)
-            ->pluck('slot')->toArray();
+        ->whereDate('appointment_date', $appointment_date)
+        ->get()
+        ->pluck('slot')
+        ->map(fn($slot) => Carbon::parse($slot)->format('H:i'))
+        ->toArray();
         return array_filter($available_slots, fn($slot) => !in_array($slot, $booked_slots));
     }
 
