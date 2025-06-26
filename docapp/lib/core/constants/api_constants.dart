@@ -1,5 +1,5 @@
 class ApiConstants {
-  // Replace with your Laravel backend URL
+  //Laravel backend URL
   static const String baseUrl = 'http://localhost:8000/api/v1';
 
   // Auth endpoints
