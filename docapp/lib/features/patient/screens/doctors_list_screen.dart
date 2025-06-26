@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/doctor.dart';
+import 'book_appointment_screen.dart';
 
 class DoctorsListScreen extends StatefulWidget {
-  const DoctorsListScreen({Key? key}) : super(key: key);
+  const DoctorsListScreen({super.key});
 
   @override
   State<DoctorsListScreen> createState() => _DoctorsListScreenState();
@@ -95,7 +96,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                         itemCount: _doctors.length,
                         itemBuilder: (context, index) {
                           final doctor = _doctors[index];
-                          
+
                           return Card(
                             margin: const EdgeInsets.only(bottom: 16),
                             elevation: 2,
@@ -118,7 +119,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                       const SizedBox(width: 16),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               doctor.name,
@@ -129,14 +131,18 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                             ),
                                             const SizedBox(height: 4),
                                             Container(
-                                              padding: const EdgeInsets.symmetric(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
                                                 horizontal: 8,
                                                 vertical: 4,
                                               ),
                                               decoration: BoxDecoration(
                                                 color: Colors.blue.shade50,
-                                                borderRadius: BorderRadius.circular(12),
-                                                border: Border.all(color: Colors.blue.shade200),
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                                border: Border.all(
+                                                    color:
+                                                        Colors.blue.shade200),
                                               ),
                                               child: Text(
                                                 doctor.specializationName,
@@ -153,31 +159,39 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                     ],
                                   ),
                                   const SizedBox(height: 16),
-                                  
+
                                   // Contact Info
-                                  if (doctor.phone != null && doctor.phone!.isNotEmpty) ...[
+                                  if (doctor.phone != null &&
+                                      doctor.phone!.isNotEmpty) ...[
                                     Row(
                                       children: [
-                                        Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                                        Icon(Icons.phone,
+                                            size: 16,
+                                            color: Colors.grey.shade600),
                                         const SizedBox(width: 8),
                                         Text(
                                           doctor.phone!,
-                                          style: TextStyle(color: Colors.grey.shade600),
+                                          style: TextStyle(
+                                              color: Colors.grey.shade600),
                                         ),
                                       ],
                                     ),
                                     const SizedBox(height: 4),
                                   ],
-                                  
-                                  if (doctor.address != null && doctor.address!.isNotEmpty) ...[
+
+                                  if (doctor.address != null &&
+                                      doctor.address!.isNotEmpty) ...[
                                     Row(
                                       children: [
-                                        Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                                        Icon(Icons.location_on,
+                                            size: 16,
+                                            color: Colors.grey.shade600),
                                         const SizedBox(width: 8),
                                         Expanded(
                                           child: Text(
                                             doctor.address!,
-                                            style: TextStyle(color: Colors.grey.shade600),
+                                            style: TextStyle(
+                                                color: Colors.grey.shade600),
                                           ),
                                         ),
                                       ],
@@ -191,19 +205,23 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                     width: double.infinity,
                                     child: ElevatedButton(
                                       onPressed: () {
-                                        // TODO: Navigate to booking screen
-                                        ScaffoldMessenger.of(context).showSnackBar(
-                                          SnackBar(
-                                            content: Text('Booking for ${doctor.name} - Coming soon!'),
+                                        Navigator.of(context).push(
+                                          MaterialPageRoute(
+                                            builder: (context) =>
+                                                BookAppointmentScreen(
+                                              doctor: doctor,
+                                            ),
                                           ),
                                         );
                                       },
                                       style: ElevatedButton.styleFrom(
                                         backgroundColor: Colors.blue,
                                         foregroundColor: Colors.white,
-                                        padding: const EdgeInsets.symmetric(vertical: 12),
+                                        padding: const EdgeInsets.symmetric(
+                                            vertical: 12),
                                         shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(8),
+                                          borderRadius:
+                                              BorderRadius.circular(8),
                                         ),
                                       ),
                                       child: const Text('Book Appointment'),

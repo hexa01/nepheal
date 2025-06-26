@@ -5,7 +5,7 @@ import '../../auth/screens/login_screen.dart';
 import 'doctors_list_screen.dart'; // Add this import
 
 class PatientDashboard extends StatefulWidget {
-  const PatientDashboard({Key? key}) : super(key: key);
+  const PatientDashboard({super.key});
 
   @override
   State<PatientDashboard> createState() => _PatientDashboardState();
@@ -60,7 +60,7 @@ class _PatientDashboardState extends State<PatientDashboard> {
 
 // Home screen
 class PatientHomeScreen extends StatelessWidget {
-  const PatientHomeScreen({Key? key}) : super(key: key);
+  const PatientHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -105,8 +105,8 @@ class PatientHomeScreen extends StatelessWidget {
 // Placeholder screen for features we haven't built yet
 class PlaceholderScreen extends StatelessWidget {
   final String title;
-  
-  const PlaceholderScreen({Key? key, required this.title}) : super(key: key);
+
+  const PlaceholderScreen({super.key, required this.title});
 
   @override
   Widget build(BuildContext context) {
@@ -125,7 +125,7 @@ class PlaceholderScreen extends StatelessWidget {
 
 // Profile screen
 class PatientProfileScreen extends StatelessWidget {
-  const PatientProfileScreen({Key? key}) : super(key: key);
+  const PatientProfileScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -138,7 +138,8 @@ class PatientProfileScreen extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.logout),
             onPressed: () async {
-              final authService = Provider.of<AuthService>(context, listen: false);
+              final authService =
+                  Provider.of<AuthService>(context, listen: false);
               await authService.logout();
               if (context.mounted) {
                 Navigator.of(context).pushReplacement(
