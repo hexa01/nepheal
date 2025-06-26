@@ -24,6 +24,39 @@ class Doctor {
     this.specialization,
   });
 
+  // For your doctors list API response
+  factory Doctor.fromListJson(Map<String, dynamic> json) {
+    final userData = json['user'] as Map<String, dynamic>;
+
+    return Doctor(
+      id: json['id'],
+      userId: 0, // Not provided in list API
+      specializationId: null, // Not directly provided
+      hourlyRate: 0.0, // Not provided in list API
+      bio: null,
+      createdAt: DateTime.now(), // Placeholder
+      updatedAt: DateTime.now(), // Placeholder
+      user: User(
+        id: 0, // Not provided in list API
+        name: userData['name'] ?? '',
+        email: userData['email'] ?? '',
+        role: userData['role'] ?? 'doctor',
+        address: userData['address'],
+        phone: userData['phone'],
+        gender: 'male', // Placeholder - not in your API response
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+      specialization: Specialization(
+        id: 0, // Not provided
+        name: userData['specialization'] ?? 'General',
+        createdAt: DateTime.now(),
+        updatedAt: DateTime.now(),
+      ),
+    );
+  }
+
+  // Keep your existing fromJson for other API responses
   factory Doctor.fromJson(Map<String, dynamic> json) {
     return Doctor(
       id: json['id'],
@@ -53,4 +86,11 @@ class Doctor {
       'specialization': specialization?.toJson(),
     };
   }
+
+  // Helper getters for easy UI access
+  String get name => user?.name ?? 'Unknown';
+  String get email => user?.email ?? '';
+  String? get phone => user?.phone;
+  String? get address => user?.address;
+  String get specializationName => specialization?.name ?? 'General';
 }

@@ -105,6 +105,38 @@ class ApiService {
     }
   }
 
+  // Specializations
+  static Future<Map<String, dynamic>> getSpecializations() async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConstants.specializations),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch specializations: $e');
+    }
+  }
+
+  // Get available slots for booking
+  static Future<Map<String, dynamic>> getAvailableSlots({
+    required int doctorId,
+    required String appointmentDate,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConstants.baseUrl}/slots?doctor_id=$doctorId&appointment_date=$appointmentDate'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch available slots: $e');
+    }
+  }
+
   // Appointments
   static Future<Map<String, dynamic>> getAppointments() async {
     try {
@@ -160,45 +192,6 @@ class ApiService {
     }
   }
 
-  // Doctors by specialization (with filtering)
-  static Future<Map<String, dynamic>> getDoctorsBySpecialization({
-    int? specializationId,
-  }) async {
-    try {
-      String url = ApiConstants.doctors;
-      if (specializationId != null) {
-        url += '?specialization_id=$specializationId';
-      }
-
-      final response = await http.get(
-        Uri.parse(url),
-        headers: _getHeaders(),
-      );
-
-      return _handleResponse(response);
-    } catch (e) {
-      throw Exception('Failed to fetch doctors: $e');
-    }
-  }
-
-  // Get available slots for booking
-  static Future<Map<String, dynamic>> getAvailableSlots({
-    required int doctorId,
-    required String appointmentDate,
-  }) async {
-    try {
-      final response = await http.get(
-        Uri.parse(
-            '${ApiConstants.baseUrl}/slots?doctor_id=$doctorId&appointment_date=$appointmentDate'),
-        headers: _getHeaders(),
-      );
-
-      return _handleResponse(response);
-    } catch (e) {
-      throw Exception('Failed to fetch available slots: $e');
-    }
-  }
-
   // Cancel appointment
   static Future<Map<String, dynamic>> cancelAppointment(
       int appointmentId) async {
@@ -211,20 +204,6 @@ class ApiService {
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Failed to cancel appointment: $e');
-    }
-  }
-
-  // Specializations
-  static Future<Map<String, dynamic>> getSpecializations() async {
-    try {
-      final response = await http.get(
-        Uri.parse(ApiConstants.specializations),
-        headers: _getHeaders(),
-      );
-
-      return _handleResponse(response);
-    } catch (e) {
-      throw Exception('Failed to fetch specializations: $e');
     }
   }
 
