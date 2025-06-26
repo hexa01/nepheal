@@ -31,7 +31,8 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [UserAuthController::class, 'logout']);
         Route::get('/specializations', [SpecializationController::class, 'index'])->name('api.specializations.index');
         Route::apiResource('appointments',AppointmentController::class)->names('api.appointments');
-        Route::get('/doctors', [DoctorController::class, 'index'])->name('api.doctors.index');
+        Route::apiResource('doctors',DoctorController::class)->except('store')->names('api.doctors');
+        // Route::get('/doctors', [DoctorController::class, 'index'])->name('api.doctors.index');
 
         Route::middleware('role:patient')->group( function () {
             Route::get('/patient-view', [PatientController::class, 'view'])->name('api.patients.view');

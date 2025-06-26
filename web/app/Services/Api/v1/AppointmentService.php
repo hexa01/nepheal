@@ -26,10 +26,10 @@ class AppointmentService
         $appointment_date = Carbon::parse($appointment_date);
         $appointment_day = $appointment_date->englishDayOfWeek;
         $schedule = $doctor->schedules->where('day', $appointment_day)->first();
-        $slots = $schedule->slots;
+        $slot_count = $schedule->slot_count;
         $start_time = Carbon::parse($schedule->start_time);
         $available_slots = [];
-        for ($i = 0; $i < $slots; $i++) {
+        for ($i = 0; $i < $slot_count; $i++) {
             $available_slots[] = $start_time->format('H:i');
             $start_time->addMinutes(30);
         }
@@ -39,9 +39,11 @@ class AppointmentService
         ->pluck('slot')
         ->map(fn($slot) => Carbon::parse($slot)->format('H:i'))
         ->toArray();
+        
         $available_slots = array_filter($available_slots, function ($slot) use ($booked_slots) {
             return !in_array($slot, $booked_slots);
         });
+
         return $available_slots;
     }
 

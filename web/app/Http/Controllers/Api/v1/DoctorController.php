@@ -51,10 +51,28 @@ class DoctorController extends BaseController
     /**
      * Display the specified doctor. (Not implemented yet)
      */
-    public function show(string $id)
-    {
-        return $this->errorResponse('Not implemented yet', 501);
+public function show(string $id)
+{
+    $doctor = Doctor::with(['user', 'specialization'])->find($id);
+    
+    if (!$doctor) {
+        return $this->errorResponse('Doctor not found', 404);
     }
+    
+    return $this->successResponse('Doctor retrieved successfully', [
+        'id' => $doctor->id,
+        'user' => [
+            'name' => $doctor->user->name,
+            'email' => $doctor->user->email,
+            'phone' => $doctor->user->phone,
+            'address' => $doctor->user->address,
+            'role' => $doctor->user->role,
+            'specialization' => $doctor->specialization->name,
+        ],
+        'bio' => $doctor->bio,
+        'hourly_rate' => $doctor->hourly_rate,
+    ]);
+}
 
     /**
      * Update doctor's information.

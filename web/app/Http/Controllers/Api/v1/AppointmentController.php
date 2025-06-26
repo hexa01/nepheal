@@ -80,7 +80,7 @@ class AppointmentController extends BaseController
             'doctor_id' => $request->doctor_id,
             'appointment_date' => $appointment_date,
             'slot' => $slot,
-            'status' => 'booked',
+            // 'status' => 'booked',
         ]);
 
         $hourly_rate = $appointment->doctor->hourly_rate;
