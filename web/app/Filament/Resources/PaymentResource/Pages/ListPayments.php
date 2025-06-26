@@ -131,8 +131,7 @@ class ListPayments extends ListRecords
                     ->hidden(fn() => $user->role === 'doctor')
                     ->icon('heroicon-m-credit-card')
                     ->size(ActionSize::Small)
-                    ->color('blue')
-                    ->button(),
+                    ->color('blue'),
                     ])
                     ->tooltip('Pay')
                     ->label('Pay')

@@ -84,6 +84,7 @@ class PaymentPage extends Page
             $payment->update([
                 'status' => 'paid',
                 'payment_method' => 'stripe',
+                'pid' => 'TXN-' . uniqid(),
             ]);
 
             $appointment =  $payment->appointment;

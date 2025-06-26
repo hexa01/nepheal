@@ -12,7 +12,6 @@ class PaymentController extends Controller
     {
         $transaction_id = 'TXN-' . uniqid();
         $payment->update(['pid' => $transaction_id]);
-        dd($payment->appointment->status);
         $esewa = new Esewa();
         $esewa->config(
             route('payment.success'), // Success URL
