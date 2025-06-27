@@ -99,11 +99,11 @@ class ApiService {
     try {
       // Build query parameters
       Map<String, String> queryParams = {};
-      
+
       if (specializationId != null) {
         queryParams['specialization_id'] = specializationId.toString();
       }
-      
+
       if (search != null && search.isNotEmpty) {
         queryParams['search'] = search;
       }
@@ -136,6 +136,128 @@ class ApiService {
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Failed to fetch doctor details: $e');
+    }
+  }
+
+  // Review API Methods
+
+  // Get reviews for a specific doctor
+  static Future<Map<String, dynamic>> getDoctorReviews({
+    required int doctorId,
+    int page = 1,
+    int perPage = 10,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConstants.baseUrl}/reviews?doctor_id=$doctorId&page=$page&per_page=$perPage'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch doctor reviews: $e');
+    }
+  }
+
+  // Get doctor rating statistics
+  static Future<Map<String, dynamic>> getDoctorRatingStats(int doctorId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/reviews/doctor/$doctorId/stats'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch doctor rating stats: $e');
+    }
+  }
+
+  // Create a new review
+  static Future<Map<String, dynamic>> createReview({
+    required int appointmentId,
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/reviews'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'appointment_id': appointmentId,
+          'rating': rating,
+          'comment': comment,
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to create review: $e');
+    }
+  }
+
+  // Get patient's reviews
+  static Future<Map<String, dynamic>> getPatientReviews() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/reviews/my-reviews'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch patient reviews: $e');
+    }
+  }
+
+  // Get appointments that can be reviewed
+  static Future<Map<String, dynamic>> getReviewableAppointments() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/reviews/reviewable-appointments'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch reviewable appointments: $e');
+    }
+  }
+
+  // Update a review
+  static Future<Map<String, dynamic>> updateReview({
+    required int reviewId,
+    required int rating,
+    String? comment,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/reviews/$reviewId'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'rating': rating,
+          'comment': comment,
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to update review: $e');
+    }
+  }
+
+  // Delete a review
+  static Future<Map<String, dynamic>> deleteReview(int reviewId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/reviews/$reviewId'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to delete review: $e');
     }
   }
 
