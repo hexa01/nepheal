@@ -33,7 +33,10 @@ class DoctorController extends BaseController
         
         $doctors = $query->get();
 
-        // FIXED: Return empty array instead of error when no doctors found
+        if ($doctors->isEmpty()) {
+            return $this->errorResponse('No doctors found', 404);
+        }
+
         $data = $doctors->map(function ($doctor) {
             return [
                 'id' => $doctor->id,
@@ -51,7 +54,6 @@ class DoctorController extends BaseController
             ];
         });
 
-        // Always return success, even with empty results
         return $this->successResponse('Doctors retrieved successfully', $data);
     }
 
@@ -87,6 +89,10 @@ class DoctorController extends BaseController
             'bio' => $doctor->bio,
             'hourly_rate' => $doctor->hourly_rate,
             'specialization_id' => $doctor->specialization_id,
+            // Add review statistics
+            'average_rating' => round($doctor->average_rating, 1),
+            'total_reviews' => $doctor->total_reviews,
+            'rating_breakdown' => $doctor->getReviewsCountByRating(),
         ]);
     }
 

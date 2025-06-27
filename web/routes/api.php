@@ -7,6 +7,7 @@ use App\Http\Controllers\Api\v1\PatientController;
 use App\Http\Controllers\Api\v1\ScheduleController;
 use App\Http\Controllers\Api\v1\SlotController;
 use App\Http\Controllers\Api\v1\SpecializationController;
+use App\Http\Controllers\Api\v1\ReviewController;
 use App\Http\Controllers\Api\v1\UserAuthController;
 use App\Http\Controllers\Api\v1\UserController;
 use App\Http\Middleware\RoleMiddleware;
@@ -21,8 +22,8 @@ Route::get('/user', function (Request $request) {
 Route::prefix('v1')->group(function () {
 
     Route::get('/test', function () {
-    return response()->json(['message' => 'API is working']);
-});
+        return response()->json(['message' => 'API is working']);
+    });
 
     Route::post('/login', [UserAuthController::class, 'login'])->name('api.login');
     Route::post('/register', [UserAuthController::class, 'register'])->name('api.register');
@@ -32,16 +33,30 @@ Route::prefix('v1')->group(function () {
         Route::get('/specializations', [SpecializationController::class, 'index'])->name('api.specializations.index');
         Route::apiResource('appointments',AppointmentController::class)->names('api.appointments');
         Route::apiResource('doctors',DoctorController::class)->except('store')->names('api.doctors');
-        // Route::get('/doctors', [DoctorController::class, 'index'])->name('api.doctors.index');
+
+        // Review Routes
+        Route::prefix('reviews')->group(function () {
+            Route::get('/', [ReviewController::class, 'index'])->name('api.reviews.index'); // Get reviews for a doctor
+            Route::get('/doctor/{doctorId}/stats', [ReviewController::class, 'getDoctorStats'])->name('api.reviews.doctor.stats'); // Get doctor rating stats
+        });
 
         Route::middleware('role:patient')->group( function () {
             Route::get('/patient-view', [PatientController::class, 'view'])->name('api.patients.view');
+            
+            // Patient Review Routes
+            Route::prefix('reviews')->group(function () {
+                Route::post('/', [ReviewController::class, 'store'])->name('api.reviews.store'); // Create review
+                Route::get('/my-reviews', [ReviewController::class, 'getPatientReviews'])->name('api.reviews.patient'); // Get patient's reviews
+                Route::get('/reviewable-appointments', [ReviewController::class, 'getReviewableAppointments'])->name('api.reviews.reviewable'); // Get appointments that can be reviewed
+                Route::put('/{reviewId}', [ReviewController::class, 'update'])->name('api.reviews.update'); // Update review
+                Route::delete('/{reviewId}', [ReviewController::class, 'destroy'])->name('api.reviews.delete'); // Delete review
+            });
         });
+
         Route::middleware('role:doctor')->group( function () {
             Route::get('/doctor-view', [DoctorController::class, 'view'])->name('api.doctors.view');
             Route::get('/patients-view', [DoctorController::class, 'viewPatients'])->name('api.doctors.patients.view');
         });
-
 
         Route::middleware('role:admin')->group( function () {
             Route::post('/specializations', [SpecializationController::class, 'store'])->name('api.specializations.store');
@@ -50,6 +65,9 @@ Route::prefix('v1')->group(function () {
             Route::put('/users/reset-password{user}', [UserController::class, 'resetPassword'])->name('api.users.reset.password');
             Route::apiResource('users',UserController::class)->except('update')->names('api.users');
             Route::apiResource('admins',AdminController::class)->only(['index','update'])->names('api.admins');
+            
+            // Admin can delete any review
+            Route::delete('/reviews/{reviewId}', [ReviewController::class, 'destroy'])->name('api.reviews.admin.delete');
         });
 
         Route::middleware('role:admin,doctor')->group( function () {
