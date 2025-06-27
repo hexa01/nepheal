@@ -91,11 +91,31 @@ class ApiService {
     }
   }
 
-  // Doctors
-  static Future<Map<String, dynamic>> getDoctors() async {
+  // Enhanced Doctors API with filtering support
+  static Future<Map<String, dynamic>> getDoctors({
+    int? specializationId,
+    String? search,
+  }) async {
     try {
+      // Build query parameters
+      Map<String, String> queryParams = {};
+      
+      if (specializationId != null) {
+        queryParams['specialization_id'] = specializationId.toString();
+      }
+      
+      if (search != null && search.isNotEmpty) {
+        queryParams['search'] = search;
+      }
+
+      // Build URI with query parameters
+      Uri uri = Uri.parse(ApiConstants.doctors);
+      if (queryParams.isNotEmpty) {
+        uri = uri.replace(queryParameters: queryParams);
+      }
+
       final response = await http.get(
-        Uri.parse(ApiConstants.doctors),
+        uri,
         headers: _getHeaders(),
       );
 

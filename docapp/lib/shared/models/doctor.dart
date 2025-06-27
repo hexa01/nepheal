@@ -24,36 +24,68 @@ class Doctor {
     this.specialization,
   });
 
-  // For your doctors list API response
+  // FIXED: Better null handling for your doctors list API response
   factory Doctor.fromListJson(Map<String, dynamic> json) {
-    final userData = json['user'] as Map<String, dynamic>;
+    try {
+      final userData = json['user'] as Map<String, dynamic>? ?? {};
 
-    return Doctor(
-      id: json['id'],
-      userId: 0, // Not provided in list API
-      specializationId: null, // Not directly provided
-      hourlyRate: 0.0, // Not provided in list API
-      bio: null,
-      createdAt: DateTime.now(), // Placeholder
-      updatedAt: DateTime.now(), // Placeholder
-      user: User(
-        id: 0, // Not provided in list API
-        name: userData['name'] ?? '',
-        email: userData['email'] ?? '',
-        role: userData['role'] ?? 'doctor',
-        address: userData['address'],
-        phone: userData['phone'],
-        gender: 'male', // Placeholder - not in your API response
+      return Doctor(
+        id: json['id'] ?? 0,
+        userId: userData['id'] ?? 0, // Now properly extracted
+        specializationId: json['specialization_id'],
+        hourlyRate: double.tryParse(json['hourly_rate']?.toString() ?? '0') ?? 0.0,
+        bio: json['bio'],
+        createdAt: DateTime.now(), // Placeholder
+        updatedAt: DateTime.now(), // Placeholder
+        user: User(
+          id: userData['id'] ?? 0,
+          name: userData['name'] ?? 'Unknown Doctor',
+          email: userData['email'] ?? '',
+          role: userData['role'] ?? 'doctor',
+          address: userData['address'], // Can be null
+          phone: userData['phone'], // Can be null
+          gender: 'male', // Placeholder
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        specialization: Specialization(
+          id: json['specialization_id'] ?? 0,
+          name: userData['specialization'] ?? 'General',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+    } catch (e) {
+      print('Error parsing doctor from list JSON: $e');
+      print('JSON data: $json');
+      // Return a safe default doctor
+      return Doctor(
+        id: json['id'] ?? 0,
+        userId: 0,
+        specializationId: null,
+        hourlyRate: 0.0,
+        bio: null,
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
-      ),
-      specialization: Specialization(
-        id: 0, // Not provided
-        name: userData['specialization'] ?? 'General',
-        createdAt: DateTime.now(),
-        updatedAt: DateTime.now(),
-      ),
-    );
+        user: User(
+          id: 0,
+          name: 'Unknown Doctor',
+          email: '',
+          role: 'doctor',
+          address: null,
+          phone: null,
+          gender: 'male',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+        specialization: Specialization(
+          id: 0,
+          name: 'General',
+          createdAt: DateTime.now(),
+          updatedAt: DateTime.now(),
+        ),
+      );
+    }
   }
 
   // Keep your existing fromJson for other API responses
@@ -88,7 +120,7 @@ class Doctor {
   }
 
   // Helper getters for easy UI access
-  String get name => user?.name ?? 'Unknown';
+  String get name => user?.name ?? 'Unknown Doctor';
   String get email => user?.email ?? '';
   String? get phone => user?.phone;
   String? get address => user?.address;
