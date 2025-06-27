@@ -649,14 +649,18 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.person, size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            'View Profile',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          Icon(Icons.person, size: 16),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'Profile',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
@@ -664,7 +668,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                     ),
                   ),
                   
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   
                   // Book Appointment Button
                   Expanded(
@@ -691,14 +695,18 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.calendar_today, size: 18),
-                          const SizedBox(width: 6),
-                          Text(
-                            'Book Now',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
+                          Icon(Icons.calendar_today, size: 16),
+                          const SizedBox(width: 4),
+                          Flexible(
+                            child: Text(
+                              'Book Now',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                         ],
