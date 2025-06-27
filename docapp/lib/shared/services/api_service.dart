@@ -125,6 +125,20 @@ class ApiService {
     }
   }
 
+  // Get single doctor details
+  static Future<Map<String, dynamic>> getDoctorById(int doctorId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.doctors}/$doctorId'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch doctor details: $e');
+    }
+  }
+
   // Specializations
   static Future<Map<String, dynamic>> getSpecializations() async {
     try {

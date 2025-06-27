@@ -347,7 +347,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 32),
+                  const SizedBox(height: 24),
 
                   // Emergency Contact Section
                   Container(
