@@ -7,6 +7,7 @@ import '../../../core/storage/storage_service.dart';
 import '../../auth/screens/login_screen.dart';
 import 'doctors_list_screen.dart';
 import 'my_appointments_screen.dart';
+import 'my_reviews_screen.dart';
 
 class PatientDashboard extends StatefulWidget {
   const PatientDashboard({super.key});
@@ -28,6 +29,7 @@ class _PatientDashboardState extends State<PatientDashboard> {
         PatientHomeScreen(onNavigate: _changeTab),
         const DoctorsListScreen(),
         const MyAppointmentsScreen(),
+        const MyReviewsScreen(),
         const PatientProfileScreen(),
       ];
 
@@ -58,6 +60,8 @@ class _PatientDashboardState extends State<PatientDashboard> {
                 icon: Icon(Icons.search), label: 'Find Doctors'),
             BottomNavigationBarItem(
                 icon: Icon(Icons.calendar_today), label: 'Appointments'),
+            BottomNavigationBarItem(
+                icon: Icon(Icons.rate_review), label: 'Reviews'),
             BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
           ],
         ),
@@ -207,13 +211,14 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   ),
                   const SizedBox(height: 16),
 
+                  // Enhanced Quick Actions with Reviews
                   Row(
                     children: [
                       Expanded(
                         child: _buildQuickActionCard(
                           icon: Icons.search,
                           title: 'Find Doctors',
-                          subtitle: 'Browse all doctors',
+                          subtitle: 'Browse & book',
                           color: Colors.blue,
                           onTap: () => widget.onNavigate(1),
                         ),
@@ -222,10 +227,38 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       Expanded(
                         child: _buildQuickActionCard(
                           icon: Icons.calendar_today,
-                          title: 'My Appointments',
+                          title: 'Appointments',
                           subtitle: 'View & manage',
                           color: Colors.green,
                           onTap: () => widget.onNavigate(2),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 12),
+
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          icon: Icons.rate_review,
+                          title: 'My Reviews',
+                          subtitle: 'Share experience',
+                          color: Colors.amber,
+                          onTap: () => widget.onNavigate(3),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildQuickActionCard(
+                          icon: Icons.favorite,
+                          title: 'Health Tips',
+                          subtitle: 'Stay healthy',
+                          color: Colors.red,
+                          onTap: () {
+                            // Scroll to health tips section
+                          },
                         ),
                       ),
                     ],
@@ -305,6 +338,95 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
 
                   const SizedBox(height: 32),
 
+                  // Reviews Summary Section
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [Colors.amber.shade50, Colors.amber.shade100],
+                      ),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.amber.shade200),
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.star,
+                                color: Colors.amber.shade600, size: 24),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Patient Reviews',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.amber.shade800,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          'Share your experiences with doctors to help other patients make informed decisions.',
+                          style: TextStyle(
+                            fontSize: 14,
+                            color: Colors.amber.shade700,
+                            height: 1.4,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                onPressed: () => widget.onNavigate(3),
+                                icon: const Icon(Icons.rate_review, size: 18),
+                                label: const Text(
+                                  'My Reviews',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                style: OutlinedButton.styleFrom(
+                                  foregroundColor: Colors.amber.shade700,
+                                  side:
+                                      BorderSide(color: Colors.amber.shade300),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: ElevatedButton.icon(
+                                onPressed: () => widget.onNavigate(2),
+                                icon: const Icon(Icons.edit, size: 18),
+                                label: const Text(
+                                  'Write Review',
+                                  style: TextStyle(fontWeight: FontWeight.w600),
+                                ),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.amber.shade600,
+                                  foregroundColor: Colors.white,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 24),
+
                   // Health Tips Section
                   Container(
                     width: double.infinity,
@@ -336,7 +458,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Regular health check-ups can help detect issues early. Schedule your annual physical examination today!',
+                          'Regular health check-ups can help detect issues early. Don\'t forget to share your experiences by writing reviews for your doctors!',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.green.shade700,
@@ -431,6 +553,13 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.3)),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.1),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -447,7 +576,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             Text(
               title,
               style: TextStyle(
-                fontSize: 16,
+                fontSize: 14,
                 fontWeight: FontWeight.bold,
                 color: color.withValues(alpha: 0.8),
               ),
@@ -456,7 +585,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             Text(
               subtitle,
               style: TextStyle(
-                fontSize: 12,
+                fontSize: 11,
                 color: color.withValues(alpha: 0.7),
               ),
             ),
