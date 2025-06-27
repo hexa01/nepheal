@@ -197,7 +197,7 @@ class ApiService {
     }
   }
 
-  // Get patient's reviews
+  // Get patient's reviews with better error handling
   static Future<Map<String, dynamic>> getPatientReviews() async {
     try {
       final response = await http.get(
@@ -205,9 +205,64 @@ class ApiService {
         headers: _getHeaders(),
       );
 
-      return _handleResponse(response);
+      // Handle different response scenarios
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        return data;
+      } else if (response.statusCode == 404) {
+        // Handle "no reviews found" case
+        try {
+          final data = jsonDecode(response.body);
+          final message = data['message']?.toString().toLowerCase() ?? '';
+
+          if (message.contains('no reviews') || message.contains('not found')) {
+            return {
+              'success': true,
+              'message': 'No reviews found',
+              'data': {'reviews': []}
+            };
+          }
+        } catch (e) {
+          // Ignore parsing error
+        }
+
+        // Default to empty reviews for 404
+        return {
+          'success': true,
+          'message': 'No reviews found',
+          'data': {'reviews': []}
+        };
+      } else if (response.statusCode == 401) {
+        throw Exception('Authentication failed. Please login again.');
+      } else if (response.statusCode >= 500) {
+        throw Exception('Server error. Please try again later.');
+      } else {
+        // Try to parse error message from response
+        try {
+          final data = jsonDecode(response.body);
+          throw Exception(data['message'] ?? 'Failed to fetch reviews');
+        } catch (e) {
+          throw Exception(
+              'Failed to fetch reviews: HTTP ${response.statusCode}');
+        }
+      }
     } catch (e) {
-      throw Exception('Failed to fetch patient reviews: $e');
+      // Return empty reviews for network errors to prevent breaking appointments
+      if (e.toString().contains('SocketException') ||
+          e.toString().contains('TimeoutException')) {
+        return {
+          'success': true,
+          'message': 'Network error - no reviews loaded',
+          'data': {'reviews': []}
+        };
+      }
+
+      // For other errors, also return empty to prevent breaking appointments
+      return {
+        'success': true,
+        'message': 'Error loading reviews',
+        'data': {'reviews': []}
+      };
     }
   }
 
@@ -219,9 +274,23 @@ class ApiService {
         headers: _getHeaders(),
       );
 
+      // Handle 404 case for reviewable appointments
+      if (response.statusCode == 404) {
+        return {
+          'success': true,
+          'message': 'No reviewable appointments found',
+          'data': {'appointments': []}
+        };
+      }
+
       return _handleResponse(response);
     } catch (e) {
-      throw Exception('Failed to fetch reviewable appointments: $e');
+      // Return empty appointments instead of throwing error
+      return {
+        'success': true,
+        'message': 'No reviewable appointments found',
+        'data': {'appointments': []}
+      };
     }
   }
 
@@ -293,13 +362,33 @@ class ApiService {
     }
   }
 
-  // Appointments
+  // Appointments with better error handling
   static Future<Map<String, dynamic>> getAppointments() async {
     try {
       final response = await http.get(
         Uri.parse(ApiConstants.appointments),
         headers: _getHeaders(),
       );
+
+      // Handle 404 specifically for no appointments
+      if (response.statusCode == 404) {
+        try {
+          final data = jsonDecode(response.body);
+          if (data['message'] != null &&
+              data['message']
+                  .toString()
+                  .toLowerCase()
+                  .contains('no appointments found')) {
+            return {
+              'success': true,
+              'message': 'No appointments found',
+              'data': {'appointments': []}
+            };
+          }
+        } catch (e) {
+          // Ignore parsing error
+        }
+      }
 
       return _handleResponse(response);
     } catch (e) {

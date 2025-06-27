@@ -14,8 +14,7 @@ class MyAppointmentsScreen extends StatefulWidget {
 
 class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
   List<Map<String, dynamic>> _appointments = [];
-  Set<int> _reviewedAppointments =
-      {}; // Track which appointments have been reviewed
+  Set<int> _reviewedAppointments = {};
   bool _isLoading = true;
   String? _error;
 
@@ -32,40 +31,73 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
     });
 
     try {
-      // Load appointments and check which ones have been reviewed
-      final futures = await Future.wait([
-        ApiService.getAppointments(),
-        ApiService.getPatientReviews(),
-      ]);
-
-      final appointmentsResponse = futures[0];
-      final reviewsResponse = futures[1];
+      // Load appointments first
+      final appointmentsResponse = await ApiService.getAppointments();
 
       if (appointmentsResponse['success']) {
         setState(() {
           _appointments = List<Map<String, dynamic>>.from(
-              appointmentsResponse['data']['appointments']);
+              appointmentsResponse['data']['appointments'] ?? []);
         });
-      }
-
-      // Track reviewed appointments
-      if (reviewsResponse['success']) {
-        final reviews = reviewsResponse['data']['reviews'] as List;
-        setState(() {
-          _reviewedAppointments =
-              reviews.map((review) => review['appointment_id'] as int).toSet();
-        });
-      }
-
-      if (!appointmentsResponse['success']) {
+      } else {
         setState(() {
           _error =
               appointmentsResponse['message'] ?? 'Failed to load appointments';
         });
+        return;
+      }
+
+      // Load reviews separately - don't let this break appointments
+      try {
+        final reviewsResponse = await ApiService.getPatientReviews();
+
+        if (reviewsResponse['success']) {
+          final reviewsData = reviewsResponse['data'];
+
+          if (reviewsData != null && reviewsData['reviews'] != null) {
+            final reviews = reviewsData['reviews'] as List;
+
+            // Convert appointment IDs to consistent type and create set
+            Set<int> reviewedIds = {};
+            for (var review in reviews) {
+              if (review['appointment_id'] != null) {
+                try {
+                  int appointmentId;
+                  if (review['appointment_id'] is String) {
+                    appointmentId = int.parse(review['appointment_id']);
+                  } else {
+                    appointmentId = review['appointment_id'] as int;
+                  }
+                  reviewedIds.add(appointmentId);
+                } catch (e) {
+                  // Skip this review if appointment_id can't be parsed
+                  continue;
+                }
+              }
+            }
+
+            setState(() {
+              _reviewedAppointments = reviewedIds;
+            });
+          } else {
+            setState(() {
+              _reviewedAppointments = {};
+            });
+          }
+        } else {
+          setState(() {
+            _reviewedAppointments = {};
+          });
+        }
+      } catch (e) {
+        // Continue without review tracking - appointments still work
+        setState(() {
+          _reviewedAppointments = {};
+        });
       }
     } catch (e) {
       setState(() {
-        _error = 'Connection error. Please try again.';
+        _error = 'Failed to load appointments. Please try again.';
       });
     } finally {
       setState(() {
@@ -92,7 +124,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                       builder: (context) => const MyReviewsScreen(),
                     ),
                   )
-                  .then((_) => _loadAppointments()); // Refresh when returning
+                  .then((_) => _loadAppointments());
             },
             tooltip: 'My Reviews',
           ),
@@ -174,7 +206,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
           const SizedBox(height: 24),
           ElevatedButton.icon(
             onPressed: () {
-              // Navigate to find doctors - this would need to be implemented
+              // Navigate to find doctors
             },
             icon: const Icon(Icons.search),
             label: const Text('Find Doctors'),
@@ -202,14 +234,24 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
     final appointmentId = appointment['id'];
     final doctorId = appointment['doctor_id'];
 
+    // Convert appointmentId to int for consistent comparison
+    int? aptId;
+    try {
+      if (appointmentId is String) {
+        aptId = int.parse(appointmentId);
+      } else {
+        aptId = appointmentId as int;
+      }
+    } catch (e) {
+      aptId = appointmentId;
+    }
+
     final statusConfig = _getStatusConfig(status);
     final appointmentDate = DateTime.tryParse(date);
     final isUpcoming =
         appointmentDate != null && appointmentDate.isAfter(DateTime.now());
-    final isPast =
-        appointmentDate != null && appointmentDate.isBefore(DateTime.now());
     final isCompleted = status == 'completed';
-    final hasBeenReviewed = _reviewedAppointments.contains(appointmentId);
+    final hasBeenReviewed = _reviewedAppointments.contains(aptId);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -228,7 +270,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
       ),
       child: Column(
         children: [
-          // Header with Status
+          // Header with Status - FIXED OVERFLOW
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -239,53 +281,82 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                 topRight: Radius.circular(18),
               ),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            child: Column(
               children: [
+                // First row: Status info and appointment ID
                 Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: statusConfig.color.withValues(alpha: 0.2),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        statusConfig.icon,
-                        size: 20,
-                        color: statusConfig.color,
+                    Expanded(
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: statusConfig.color.withValues(alpha: 0.2),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Icon(
+                              statusConfig.icon,
+                              size: 20,
+                              color: statusConfig.color,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  statusConfig.title,
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: statusConfig.color,
+                                  ),
+                                ),
+                                Text(
+                                  statusConfig.subtitle,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: statusConfig.color
+                                        .withValues(alpha: 0.8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(width: 12),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          statusConfig.title,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: statusConfig.color,
-                          ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withValues(alpha: 0.8),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        '#$aptId',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.grey.shade600,
                         ),
-                        Text(
-                          statusConfig.subtitle,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: statusConfig.color.withValues(alpha: 0.8),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    // Review status indicator
-                    if (isCompleted) ...[
+
+                // Second row: Review status (only for completed appointments)
+                if (isCompleted) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                            horizontal: 12, vertical: 6),
                         decoration: BoxDecoration(
                           color: hasBeenReviewed
                               ? Colors.amber.shade100
@@ -302,16 +373,16 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                           children: [
                             Icon(
                               hasBeenReviewed ? Icons.star : Icons.star_border,
-                              size: 12,
+                              size: 14,
                               color: hasBeenReviewed
                                   ? Colors.amber.shade600
                                   : Colors.grey.shade500,
                             ),
-                            const SizedBox(width: 4),
+                            const SizedBox(width: 6),
                             Text(
                               hasBeenReviewed ? 'Reviewed' : 'Not reviewed',
                               style: TextStyle(
-                                fontSize: 10,
+                                fontSize: 12,
                                 color: hasBeenReviewed
                                     ? Colors.amber.shade700
                                     : Colors.grey.shade600,
@@ -321,26 +392,9 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(width: 8),
                     ],
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '#$appointmentId',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ],
             ),
           ),
@@ -492,49 +546,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                   ),
                 ),
 
-                // Action Buttons
-                if (status == 'pending') ...[
-                  const SizedBox(height: 20),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          onPressed: () => _cancelAppointment(appointment),
-                          icon: const Icon(Icons.cancel, size: 18),
-                          label: const Text('Cancel'),
-                          style: OutlinedButton.styleFrom(
-                            foregroundColor: Colors.red,
-                            side: const BorderSide(color: Colors.red),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: ElevatedButton.icon(
-                          onPressed: () {
-                            // Reschedule functionality
-                          },
-                          icon: const Icon(Icons.edit_calendar, size: 18),
-                          label: const Text('Reschedule'),
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 12),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-
-                // Write Review Button for completed appointments
+                // Write Review Button for completed appointments that haven't been reviewed
                 if (isCompleted && !hasBeenReviewed) ...[
                   const SizedBox(height: 20),
                   Container(
@@ -658,7 +670,49 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                   ),
                 ],
 
-                // Time indicators
+                // Cancel/Reschedule buttons for pending appointments
+                if (status == 'pending') ...[
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () => _cancelAppointment(appointment),
+                          icon: const Icon(Icons.cancel, size: 18),
+                          label: const Text('Cancel'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.red,
+                            side: const BorderSide(color: Colors.red),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: () {
+                            // Reschedule functionality
+                          },
+                          icon: const Icon(Icons.edit_calendar, size: 18),
+                          label: const Text('Reschedule'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.blue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+
+                // Time indicators for upcoming appointments
                 if (isUpcoming && status == 'booked') ...[
                   const SizedBox(height: 16),
                   Container(
@@ -770,7 +824,17 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
 
   String _formatTime(String time24) {
     try {
-      final time = DateFormat('HH:mm').parse(time24);
+      // Handle both "HH:mm:ss" and "HH:mm" formats
+      String timeStr = time24.trim();
+
+      // If the time includes seconds, remove them
+      if (timeStr.contains(':') && timeStr.split(':').length == 3) {
+        // Convert "14:00:00" to "14:00"
+        final parts = timeStr.split(':');
+        timeStr = '${parts[0]}:${parts[1]}';
+      }
+
+      final time = DateFormat('HH:mm').parse(timeStr);
       return DateFormat('h:mm a').format(time);
     } catch (e) {
       return time24;
@@ -850,7 +914,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
               ),
             ),
           );
-          _loadAppointments(); // Refresh the list
+          _loadAppointments();
         }
       } else {
         if (mounted) {

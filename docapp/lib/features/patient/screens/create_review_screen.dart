@@ -421,14 +421,25 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
     return DateFormat('EEEE, MMM dd, yyyy').format(date);
   }
 
-  String _formatTime(String time24) {
-    try {
-      final time = DateFormat('HH:mm').parse(time24);
-      return DateFormat('h:mm a').format(time);
-    } catch (e) {
-      return time24;
+String _formatTime(String time24) {
+  try {
+    // Handle both "HH:mm:ss" and "HH:mm" formats
+    String timeStr = time24.trim();
+    
+    // If the time includes seconds, remove them
+    if (timeStr.contains(':') && timeStr.split(':').length == 3) {
+      // Convert "14:00:00" to "14:00"
+      final parts = timeStr.split(':');
+      timeStr = '${parts[0]}:${parts[1]}';
     }
+    
+    final time = DateFormat('HH:mm').parse(timeStr);
+    return DateFormat('h:mm a').format(time);
+  } catch (e) {
+    print('⚠️ Time parsing error for "$time24": $e');
+    return time24;
   }
+}
 
   Future<void> _submitReview() async {
     if (_rating == 0) {

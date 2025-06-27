@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/models/doctor.dart';
+import '../../../shared/models/user.dart';
+import '../../../shared/models/specialization.dart';
 import '../../../shared/models/review.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/rating_widget.dart';
@@ -41,8 +43,38 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       final response = await ApiService.getDoctorById(widget.doctor.id);
 
       if (response['success']) {
+        // Parse the doctor data from your backend response
+        final data = response['data'];
+
+        // Create a Doctor object with the real API data
         setState(() {
-          _detailedDoctor = Doctor.fromJson(response['data']);
+          _detailedDoctor = Doctor(
+            id: data['id'],
+            userId: data['user']['id'] ?? 0,
+            specializationId: data['specialization_id'],
+            hourlyRate:
+                double.tryParse(data['hourly_rate']?.toString() ?? '0') ?? 0.0,
+            bio: data['bio'],
+            createdAt: DateTime.now(),
+            updatedAt: DateTime.now(),
+            user: User(
+              id: data['user']['id'] ?? 0,
+              name: data['user']['name'] ?? 'Unknown Doctor',
+              email: data['user']['email'] ?? '',
+              role: data['user']['role'] ?? 'doctor',
+              address: data['user']['address'],
+              phone: data['user']['phone'],
+              gender: 'male', // Default
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+            specialization: Specialization(
+              id: data['specialization_id'] ?? 0,
+              name: data['user']['specialization'] ?? 'General',
+              createdAt: DateTime.now(),
+              updatedAt: DateTime.now(),
+            ),
+          );
           _isLoading = false;
         });
       } else {
@@ -56,6 +88,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         _detailedDoctor = widget.doctor; // Fallback to basic info
         _isLoading = false;
       });
+      print('Doctor details error: $e');
     }
   }
 
@@ -211,7 +244,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Availability Indicator with Rating
+                        // Availability Indicator with Real Rating
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -236,6 +269,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                 ),
                               ],
                             ),
+                            // Show real rating data
                             if (_ratingStats != null &&
                                 _ratingStats!.totalReviews > 0)
                               Container(
@@ -273,6 +307,25 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                     ),
                                   ],
                                 ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Text(
+                                  'New Doctor',
+                                  style: TextStyle(
+                                    color: Colors.white.withValues(alpha: 0.9),
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                               ),
                           ],
                         ),
@@ -291,7 +344,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Quick Stats Cards
+                  // Quick Stats Cards - Now with real data
                   Row(
                     children: [
                       Expanded(
@@ -299,9 +352,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                           icon: Icons.star,
                           title:
                               _ratingStats?.averageRating.toStringAsFixed(1) ??
-                                  '4.8',
-                          subtitle:
-                              '${_ratingStats?.totalReviews ?? 150}+ reviews',
+                                  'New',
+                          subtitle: _ratingStats != null &&
+                                  _ratingStats!.totalReviews > 0
+                              ? '${_ratingStats!.totalReviews} reviews'
+                              : 'No reviews yet',
                           color: Colors.amber,
                         ),
                       ),
@@ -506,7 +561,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Rating Summary Card
+                  // Rating Summary Card - Real Data
                   if (_ratingStats != null &&
                       _ratingStats!.totalReviews > 0) ...[
                     Container(
@@ -616,7 +671,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Recent Reviews
+                  // Recent Reviews - Real Data
                   if (_isLoadingReviews)
                     Container(
                       padding: const EdgeInsets.all(40),

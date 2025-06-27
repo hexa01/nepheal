@@ -28,9 +28,12 @@ C:.
 ¦   +---patient
 ¦       +---screens
 ¦       ¦       book_appointment_screen.dart
+¦       ¦       create_review_screen.dart
 ¦       ¦       doctors_list_screen.dart
 ¦       ¦       doctor_profile_screen.dart
+¦       ¦       doctor_reviews_screen.dart
 ¦       ¦       my_appointments_screen.dart
+¦       ¦       my_reviews_screen.dart
 ¦       ¦       patient_dashboard.dart
 ¦       ¦       
 ¦       +---widgets
