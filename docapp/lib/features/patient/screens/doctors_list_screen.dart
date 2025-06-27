@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/doctor.dart';
+import '../../../shared/models/review.dart';
 import '../../../shared/models/specialization.dart';
+import '../../../shared/widgets/rating_widget.dart';
 import 'book_appointment_screen.dart';
 import 'doctor_profile_screen.dart';
 
@@ -16,6 +18,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
   List<Doctor> _doctors = [];
   List<Doctor> _allDoctors = [];
   List<Specialization> _specializations = [];
+  Map<int, DoctorRatingStats> _doctorRatings = {}; // Cache for ratings
   bool _isLoading = true;
   bool _isFilterLoading = false;
   String? _error;
@@ -54,13 +57,19 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
       if (doctorsResponse['success'] && specializationsResponse['success']) {
         final doctorsData = doctorsResponse['data'] as List;
         final specializationsData = specializationsResponse['data'] as List;
-        
+
         setState(() {
-          _allDoctors = doctorsData.map((json) => Doctor.fromListJson(json)).toList();
+          _allDoctors =
+              doctorsData.map((json) => Doctor.fromListJson(json)).toList();
           _doctors = List.from(_allDoctors);
-          
-          _specializations = specializationsData.map((json) => Specialization.fromJson(json)).toList();
+
+          _specializations = specializationsData
+              .map((json) => Specialization.fromJson(json))
+              .toList();
         });
+
+        // Load ratings for all doctors
+        await _loadDoctorRatings();
       } else {
         setState(() {
           _error = 'Failed to load data. Please try again.';
@@ -78,6 +87,46 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
     }
   }
 
+  Future<void> _loadDoctorRatings() async {
+    // Load ratings for all doctors in parallel, but limit concurrent requests
+    final ratingsMap = <int, DoctorRatingStats>{};
+
+    for (int i = 0; i < _doctors.length; i += 3) {
+      final batch = _doctors.skip(i).take(3);
+      final futures = batch.map((doctor) => _loadSingleDoctorRating(doctor.id));
+
+      try {
+        final results = await Future.wait(futures);
+        for (int j = 0; j < results.length; j++) {
+          final doctorId = batch.elementAt(j).id;
+          if (results[j] != null) {
+            ratingsMap[doctorId] = results[j]!;
+          }
+        }
+      } catch (e) {
+        print('Error loading batch ratings: $e');
+      }
+    }
+
+    if (mounted) {
+      setState(() {
+        _doctorRatings = ratingsMap;
+      });
+    }
+  }
+
+  Future<DoctorRatingStats?> _loadSingleDoctorRating(int doctorId) async {
+    try {
+      final response = await ApiService.getDoctorRatingStats(doctorId);
+      if (response['success']) {
+        return DoctorRatingStats.fromJson(response['data']);
+      }
+    } catch (e) {
+      print('Error loading rating for doctor $doctorId: $e');
+    }
+    return null;
+  }
+
   Future<void> _filterDoctors() async {
     setState(() {
       _isFilterLoading = true;
@@ -93,9 +142,17 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
       if (response['success']) {
         // Handle both empty and populated results successfully
         final data = response['data'] as List;
+        final filteredDoctors =
+            data.map((json) => Doctor.fromListJson(json)).toList();
+
         setState(() {
-          _doctors = data.map((json) => Doctor.fromListJson(json)).toList();
+          _doctors = filteredDoctors;
         });
+
+        // Load ratings for filtered doctors
+        if (filteredDoctors.isNotEmpty) {
+          await _loadDoctorRatings();
+        }
       } else {
         setState(() {
           _error = response['message'] ?? 'Failed to filter doctors';
@@ -176,7 +233,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Colors.blue, width: 2),
+                      borderSide:
+                          const BorderSide(color: Colors.blue, width: 2),
                     ),
                     filled: true,
                     fillColor: Colors.white,
@@ -193,9 +251,9 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                     });
                   },
                 ),
-                
+
                 const SizedBox(height: 12),
-                
+
                 // Specialization Filter & Clear Button
                 Row(
                   children: [
@@ -212,8 +270,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                             value: _selectedSpecializationId,
                             hint: Row(
                               children: [
-                                Icon(Icons.medical_services, 
-                                     color: Colors.blue.shade600, size: 20),
+                                Icon(Icons.medical_services,
+                                    color: Colors.blue.shade600, size: 20),
                                 const SizedBox(width: 8),
                                 const Text('All Specializations'),
                               ],
@@ -224,8 +282,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                 value: null,
                                 child: Row(
                                   children: [
-                                    Icon(Icons.all_inclusive, 
-                                         color: Colors.grey.shade600, size: 20),
+                                    Icon(Icons.all_inclusive,
+                                        color: Colors.grey.shade600, size: 20),
                                     const SizedBox(width: 8),
                                     const Text('All Specializations'),
                                   ],
@@ -236,8 +294,11 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                   value: specialization.id,
                                   child: Row(
                                     children: [
-                                      Icon(_getSpecializationIcon(specialization.name),
-                                           color: Colors.blue.shade600, size: 20),
+                                      Icon(
+                                          _getSpecializationIcon(
+                                              specialization.name),
+                                          color: Colors.blue.shade600,
+                                          size: 20),
                                       const SizedBox(width: 8),
                                       Text(specialization.name),
                                     ],
@@ -255,11 +316,12 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                         ),
                       ),
                     ),
-                    
+
                     const SizedBox(width: 8),
-                    
+
                     // Clear Filters Button
-                    if (_selectedSpecializationId != null || _searchQuery.isNotEmpty)
+                    if (_selectedSpecializationId != null ||
+                        _searchQuery.isNotEmpty)
                       Container(
                         decoration: BoxDecoration(
                           color: Colors.red.shade50,
@@ -268,20 +330,22 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                         ),
                         child: IconButton(
                           onPressed: _clearFilters,
-                          icon: Icon(Icons.clear_all, color: Colors.red.shade600),
+                          icon:
+                              Icon(Icons.clear_all, color: Colors.red.shade600),
                           tooltip: 'Clear filters',
                         ),
                       ),
                   ],
                 ),
-                
+
                 // Active Filters Display
-                if (_selectedSpecializationId != null || _searchQuery.isNotEmpty) ...[
+                if (_selectedSpecializationId != null ||
+                    _searchQuery.isNotEmpty) ...[
                   const SizedBox(height: 8),
                   Row(
                     children: [
-                      Icon(Icons.filter_list, 
-                           size: 16, color: Colors.blue.shade600),
+                      Icon(Icons.filter_list,
+                          size: 16, color: Colors.blue.shade600),
                       const SizedBox(width: 4),
                       Text(
                         'Active filters:',
@@ -294,14 +358,16 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       const SizedBox(width: 8),
                       if (_selectedSpecializationId != null)
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.blue.shade100,
                             borderRadius: BorderRadius.circular(8),
                           ),
                           child: Text(
                             _specializations
-                                .firstWhere((s) => s.id == _selectedSpecializationId)
+                                .firstWhere(
+                                    (s) => s.id == _selectedSpecializationId)
                                 .name,
                             style: TextStyle(
                               fontSize: 10,
@@ -312,7 +378,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       if (_searchQuery.isNotEmpty) ...[
                         const SizedBox(width: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
                           decoration: BoxDecoration(
                             color: Colors.green.shade100,
                             borderRadius: BorderRadius.circular(8),
@@ -365,7 +432,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            Icon(Icons.error, size: 64, color: Colors.red.shade300),
+                            Icon(Icons.error,
+                                size: 64, color: Colors.red.shade300),
                             const SizedBox(height: 16),
                             Text(
                               _error!,
@@ -385,28 +453,31 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                             child: Column(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.search_off, 
-                                     size: 64, color: Colors.grey.shade400),
+                                Icon(Icons.search_off,
+                                    size: 64, color: Colors.grey.shade400),
                                 const SizedBox(height: 16),
                                 Text(
-                                  _selectedSpecializationId != null || _searchQuery.isNotEmpty
+                                  _selectedSpecializationId != null ||
+                                          _searchQuery.isNotEmpty
                                       ? 'No doctors found'
                                       : 'No doctors available',
                                   style: TextStyle(
-                                    fontSize: 18, 
+                                    fontSize: 18,
                                     color: Colors.grey.shade600,
                                     fontWeight: FontWeight.w500,
                                   ),
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  _selectedSpecializationId != null || _searchQuery.isNotEmpty
+                                  _selectedSpecializationId != null ||
+                                          _searchQuery.isNotEmpty
                                       ? 'Try adjusting your filters or search'
                                       : 'Check back later for available doctors',
                                   style: TextStyle(color: Colors.grey.shade500),
                                   textAlign: TextAlign.center,
                                 ),
-                                if (_selectedSpecializationId != null || _searchQuery.isNotEmpty) ...[
+                                if (_selectedSpecializationId != null ||
+                                    _searchQuery.isNotEmpty) ...[
                                   const SizedBox(height: 16),
                                   TextButton.icon(
                                     onPressed: _clearFilters,
@@ -424,7 +495,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                               itemCount: _doctors.length,
                               itemBuilder: (context, index) {
                                 final doctor = _doctors[index];
-                                return _buildDoctorCard(doctor);
+                                final rating = _doctorRatings[doctor.id];
+                                return _buildDoctorCard(doctor, rating);
                               },
                             ),
                           ),
@@ -434,7 +506,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
     );
   }
 
-  Widget _buildDoctorCard(Doctor doctor) {
+  Widget _buildDoctorCard(Doctor doctor, DoctorRatingStats? ratingStats) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 4,
@@ -490,7 +562,9 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          doctor.name.isNotEmpty ? doctor.name : 'Unknown Doctor',
+                          doctor.name.isNotEmpty
+                              ? doctor.name
+                              : 'Unknown Doctor',
                           style: const TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
@@ -505,7 +579,10 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                           ),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: [Colors.blue.shade50, Colors.blue.shade100],
+                              colors: [
+                                Colors.blue.shade50,
+                                Colors.blue.shade100
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(20),
                             border: Border.all(color: Colors.blue.shade200),
@@ -514,7 +591,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               Icon(
-                                _getSpecializationIcon(doctor.specializationName ?? 'General'),
+                                _getSpecializationIcon(
+                                    doctor.specializationName ?? 'General'),
                                 size: 16,
                                 color: Colors.blue.shade700,
                               ),
@@ -556,31 +634,43 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       ],
                     ),
                   ),
-                  // Rating
+                  // Rating - Now shows real data
                   Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.star, color: Colors.amber, size: 16),
-                          const SizedBox(width: 2),
-                          Text(
-                            '4.8',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.amber.shade700,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        '(150+)',
-                        style: TextStyle(
-                          fontSize: 10,
-                          color: Colors.grey.shade600,
+                      if (ratingStats != null &&
+                          ratingStats.totalReviews > 0) ...[
+                        RatingWidget(
+                          rating: ratingStats.averageRating,
+                          size: 16,
+                          showRating: true,
+                          color: Colors.amber,
                         ),
-                      ),
+                        const SizedBox(height: 2),
+                        Text(
+                          '(${ratingStats.totalReviews})',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ] else ...[
+                        Text(
+                          'New Doctor',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.blue.shade600,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        Text(
+                          'No reviews yet',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.grey.shade500,
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ],
@@ -609,7 +699,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(Icons.location_on, size: 16, color: Colors.grey.shade600),
+                    Icon(Icons.location_on,
+                        size: 16, color: Colors.grey.shade600),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -626,7 +717,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
               ] else
                 const SizedBox(height: 8),
 
-              // Action Buttons
+              // Enhanced Action Buttons with Rating Info
               Row(
                 children: [
                   // View Profile Button
@@ -635,7 +726,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) => DoctorProfileScreen(doctor: doctor),
+                            builder: (context) =>
+                                DoctorProfileScreen(doctor: doctor),
                           ),
                         );
                       },
@@ -667,9 +759,9 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       ),
                     ),
                   ),
-                  
+
                   const SizedBox(width: 8),
-                  
+
                   // Book Appointment Button
                   Expanded(
                     flex: 2,
@@ -715,6 +807,35 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                   ),
                 ],
               ),
+
+              // Show rating summary if available
+              if (ratingStats != null && ratingStats.totalReviews > 0) ...[
+                const SizedBox(height: 12),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.amber.shade50,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.amber.shade200),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.star, size: 16, color: Colors.amber.shade600),
+                      const SizedBox(width: 6),
+                      Text(
+                        '${ratingStats.averageRating.toStringAsFixed(1)} rating from ${ratingStats.totalReviews} patients',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.amber.shade700,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
         ),

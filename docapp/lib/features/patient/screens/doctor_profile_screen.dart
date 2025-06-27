@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../shared/models/doctor.dart';
+import '../../../shared/models/review.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/widgets/rating_widget.dart';
+import '../../../shared/widgets/review_card_widget.dart';
 import 'book_appointment_screen.dart';
+import 'doctor_reviews_screen.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final Doctor doctor;
@@ -14,13 +18,17 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   Doctor? _detailedDoctor;
+  DoctorRatingStats? _ratingStats;
+  List<Review> _recentReviews = [];
   bool _isLoading = true;
+  bool _isLoadingReviews = true;
   String? _error;
 
   @override
   void initState() {
     super.initState();
     _loadDoctorDetails();
+    _loadDoctorReviews();
   }
 
   Future<void> _loadDoctorDetails() async {
@@ -47,6 +55,45 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       setState(() {
         _detailedDoctor = widget.doctor; // Fallback to basic info
         _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _loadDoctorReviews() async {
+    setState(() {
+      _isLoadingReviews = true;
+    });
+
+    try {
+      // Load both rating stats and recent reviews
+      final futures = await Future.wait([
+        ApiService.getDoctorRatingStats(widget.doctor.id),
+        ApiService.getDoctorReviews(
+            doctorId: widget.doctor.id, page: 1, perPage: 3),
+      ]);
+
+      final statsResponse = futures[0];
+      final reviewsResponse = futures[1];
+
+      if (statsResponse['success']) {
+        setState(() {
+          _ratingStats = DoctorRatingStats.fromJson(statsResponse['data']);
+        });
+      }
+
+      if (reviewsResponse['success']) {
+        final reviewsData = reviewsResponse['data']['reviews'] as List;
+        setState(() {
+          _recentReviews =
+              reviewsData.map((json) => Review.fromJson(json)).toList();
+        });
+      }
+    } catch (e) {
+      // Don't show error for reviews, just fail silently
+      print('Error loading reviews: $e');
+    } finally {
+      setState(() {
+        _isLoadingReviews = false;
       });
     }
   }
@@ -164,26 +211,69 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Availability Indicator
+                        // Availability Indicator with Rating
                         Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            Container(
-                              width: 8,
-                              height: 8,
-                              decoration: BoxDecoration(
-                                color: Colors.green,
-                                borderRadius: BorderRadius.circular(4),
-                              ),
+                            Row(
+                              children: [
+                                Container(
+                                  width: 8,
+                                  height: 8,
+                                  decoration: BoxDecoration(
+                                    color: Colors.green,
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                const Text(
+                                  'Available Today',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Available Today',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
+                            if (_ratingStats != null &&
+                                _ratingStats!.totalReviews > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.2),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.star,
+                                        size: 16, color: Colors.amber),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      _ratingStats!.averageRating
+                                          .toStringAsFixed(1),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '(${_ratingStats!.totalReviews})',
+                                      style: TextStyle(
+                                        color:
+                                            Colors.white.withValues(alpha: 0.8),
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ),
-                            ),
                           ],
                         ),
                       ],
@@ -207,8 +297,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       Expanded(
                         child: _buildStatCard(
                           icon: Icons.star,
-                          title: '4.8',
-                          subtitle: 'Rating',
+                          title:
+                              _ratingStats?.averageRating.toStringAsFixed(1) ??
+                                  '4.8',
+                          subtitle:
+                              '${_ratingStats?.totalReviews ?? 150}+ reviews',
                           color: Colors.amber,
                         ),
                       ),
@@ -378,6 +471,234 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 24),
+
+                  // Patient Reviews Section
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Patient Reviews',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      if (_ratingStats != null &&
+                          _ratingStats!.totalReviews > 0)
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    DoctorReviewsScreen(doctor: doctor),
+                              ),
+                            );
+                          },
+                          child: Text(
+                            'See All (${_ratingStats!.totalReviews})',
+                            style: const TextStyle(fontSize: 14),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Rating Summary Card
+                  if (_ratingStats != null &&
+                      _ratingStats!.totalReviews > 0) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Colors.amber.shade50, Colors.amber.shade100],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.amber.shade200),
+                      ),
+                      child: Row(
+                        children: [
+                          // Overall Rating
+                          Column(
+                            children: [
+                              Text(
+                                _ratingStats!.averageRating.toStringAsFixed(1),
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.amber.shade800,
+                                ),
+                              ),
+                              RatingWidget(
+                                rating: _ratingStats!.averageRating,
+                                size: 16,
+                                color: Colors.amber,
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                '${_ratingStats!.totalReviews} reviews',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  color: Colors.amber.shade700,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(width: 24),
+                          // Rating Breakdown (Compact)
+                          Expanded(
+                            child: Column(
+                              children: List.generate(3, (index) {
+                                final rating = 5 - index; // Show 5, 4, 3 stars
+                                final count =
+                                    _ratingStats!.ratingBreakdown[rating] ?? 0;
+                                final percentage =
+                                    _ratingStats!.totalReviews > 0
+                                        ? count / _ratingStats!.totalReviews
+                                        : 0.0;
+
+                                return Padding(
+                                  padding:
+                                      const EdgeInsets.symmetric(vertical: 2),
+                                  child: Row(
+                                    children: [
+                                      Text(
+                                        '$rating',
+                                        style: const TextStyle(
+                                            fontSize: 11,
+                                            fontWeight: FontWeight.w500),
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Icon(Icons.star,
+                                          size: 10, color: Colors.amber),
+                                      const SizedBox(width: 6),
+                                      Expanded(
+                                        child: Container(
+                                          height: 6,
+                                          decoration: BoxDecoration(
+                                            color: Colors.grey.shade200,
+                                            borderRadius:
+                                                BorderRadius.circular(3),
+                                          ),
+                                          child: FractionallySizedBox(
+                                            alignment: Alignment.centerLeft,
+                                            widthFactor: percentage,
+                                            child: Container(
+                                              decoration: BoxDecoration(
+                                                color: Colors.amber,
+                                                borderRadius:
+                                                    BorderRadius.circular(3),
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 6),
+                                      Text(
+                                        '$count',
+                                        style: TextStyle(
+                                            fontSize: 10,
+                                            color: Colors.grey.shade600),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                  ],
+
+                  // Recent Reviews
+                  if (_isLoadingReviews)
+                    Container(
+                      padding: const EdgeInsets.all(40),
+                      child: const Center(child: CircularProgressIndicator()),
+                    )
+                  else if (_recentReviews.isNotEmpty) ...[
+                    // Show up to 3 recent reviews
+                    ...(_recentReviews.take(3).map((review) => Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: ReviewCard(
+                            review: review,
+                            showDoctorName: false,
+                          ),
+                        ))),
+
+                    if (_ratingStats != null &&
+                        _ratingStats!.totalReviews > 3) ...[
+                      const SizedBox(height: 12),
+                      Center(
+                        child: OutlinedButton.icon(
+                          onPressed: () {
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    DoctorReviewsScreen(doctor: doctor),
+                              ),
+                            );
+                          },
+                          icon: const Icon(Icons.reviews, size: 18),
+                          label: Text(
+                              'View All ${_ratingStats!.totalReviews} Reviews'),
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.blue,
+                            side: BorderSide(color: Colors.blue.shade300),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 20, vertical: 12),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ] else if (_ratingStats == null ||
+                      _ratingStats!.totalReviews == 0) ...[
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(24),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            Icons.star_border,
+                            size: 48,
+                            color: Colors.grey.shade400,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            'No Reviews Yet',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Be the first to review Dr. ${doctor.name}',
+                            style: TextStyle(
+                              fontSize: 14,
+                              color: Colors.grey.shade500,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 32),
 
