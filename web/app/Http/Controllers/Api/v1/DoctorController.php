@@ -13,16 +13,27 @@ use Illuminate\Support\Facades\Hash;
 class DoctorController extends BaseController
 {
     /**
-     * Show all doctors.
+     * Show all doctors with optional specialization filtering.
      */
-    public function index()
+    public function index(Request $request)
     {
-        $doctors = Doctor::with('user', 'specialization')->get();
-
-        if ($doctors->isEmpty()) {
-            return $this->errorResponse('No doctors found', 404);
+        $query = Doctor::with('user', 'specialization');
+        
+        // Add specialization filtering if requested
+        if ($request->has('specialization_id') && $request->specialization_id != '') {
+            $query->where('specialization_id', $request->specialization_id);
         }
+        
+        // Add search by name if requested
+        if ($request->has('search') && $request->search != '') {
+            $query->whereHas('user', function($q) use ($request) {
+                $q->where('name', 'like', '%' . $request->search . '%');
+            });
+        }
+        
+        $doctors = $query->get();
 
+        // FIXED: Return empty array instead of error when no doctors found
         $data = $doctors->map(function ($doctor) {
             return [
                 'id' => $doctor->id,
@@ -32,11 +43,15 @@ class DoctorController extends BaseController
                     'phone'          => $doctor->user->phone,
                     'address'        => $doctor->user->address,
                     'role'           => $doctor->user->role,
-                    'specialization' => $doctor->specialization->name,
+                    'specialization' => $doctor->specialization->name ?? 'General',
                 ],
+                'hourly_rate' => $doctor->hourly_rate,
+                'bio' => $doctor->bio,
+                'specialization_id' => $doctor->specialization_id,
             ];
         });
 
+        // Always return success, even with empty results
         return $this->successResponse('Doctors retrieved successfully', $data);
     }
 
@@ -49,30 +64,31 @@ class DoctorController extends BaseController
     }
 
     /**
-     * Display the specified doctor. (Not implemented yet)
+     * Display the specified doctor.
      */
-public function show(string $id)
-{
-    $doctor = Doctor::with(['user', 'specialization'])->find($id);
-    
-    if (!$doctor) {
-        return $this->errorResponse('Doctor not found', 404);
+    public function show(string $id)
+    {
+        $doctor = Doctor::with(['user', 'specialization'])->find($id);
+        
+        if (!$doctor) {
+            return $this->errorResponse('Doctor not found', 404);
+        }
+        
+        return $this->successResponse('Doctor retrieved successfully', [
+            'id' => $doctor->id,
+            'user' => [
+                'name' => $doctor->user->name,
+                'email' => $doctor->user->email,
+                'phone' => $doctor->user->phone,
+                'address' => $doctor->user->address,
+                'role' => $doctor->user->role,
+                'specialization' => $doctor->specialization->name ?? 'General',
+            ],
+            'bio' => $doctor->bio,
+            'hourly_rate' => $doctor->hourly_rate,
+            'specialization_id' => $doctor->specialization_id,
+        ]);
     }
-    
-    return $this->successResponse('Doctor retrieved successfully', [
-        'id' => $doctor->id,
-        'user' => [
-            'name' => $doctor->user->name,
-            'email' => $doctor->user->email,
-            'phone' => $doctor->user->phone,
-            'address' => $doctor->user->address,
-            'role' => $doctor->user->role,
-            'specialization' => $doctor->specialization->name,
-        ],
-        'bio' => $doctor->bio,
-        'hourly_rate' => $doctor->hourly_rate,
-    ]);
-}
 
     /**
      * Update doctor's information.
@@ -125,7 +141,7 @@ public function show(string $id)
                 'phone'          => $user->phone,
                 'address'        => $user->address,
                 'role'           => $user->role,
-                'specialization' => $doctor->specialization->name,
+                'specialization' => $doctor->specialization->name ?? 'General',
             ],
         ];
 
@@ -160,7 +176,7 @@ public function show(string $id)
                 'phone'          => $doctor->user->phone,
                 'address'        => $doctor->user->address,
                 'role'           => $doctor->user->role,
-                'specialization' => $doctor->specialization->name,
+                'specialization' => $doctor->specialization->name ?? 'General',
             ],
         ];
 
@@ -199,20 +215,4 @@ public function show(string $id)
 
         return $this->successResponse('Patients information retrieved successfully', $data);
     }
-    
 }
-
-
-// public function search(Request $request)
-// {
-//     $query = $request->get('query');
-
-//     $doctors = Doctor::with(['user', 'speciality', 'appointmentSlots'])
-//         ->whereHas('user', function ($q) use ($query) {
-//             $q->where('f_name', 'like', "%$query%")
-//               ->orWhere('l_name', 'like', "%$query%");
-//         })
-//         ->get();
-
-//     return response()->json(['doctors' => $doctors]);
-// }
