@@ -513,26 +513,112 @@ class ApiService {
   }
 
   static Future<Map<String, dynamic>> changePassword({
-  required String currentPassword,
-  required String newPassword,
-  required String confirmPassword,
-}) async {
-  try {
-    final response = await http.put(
-      Uri.parse('${ApiConstants.baseUrl}/change-password'),
-      headers: _getHeaders(),
-      body: jsonEncode({
-        'current_password': currentPassword,
-        'password': newPassword,
-        'password_confirmation': confirmPassword,
-      }),
-    );
+    required String currentPassword,
+    required String newPassword,
+    required String confirmPassword,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/change-password'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'current_password': currentPassword,
+          'password': newPassword,
+          'password_confirmation': confirmPassword,
+        }),
+      );
 
-    return _handleResponse(response);
-  } catch (e) {
-    throw Exception('Failed to change password: $e');
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to change password: $e');
+    }
   }
-}
+
+  // Schedule Management Methods
+
+  // Get doctor's weekly schedule
+  static Future<Map<String, dynamic>> getDoctorSchedule() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/schedules'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch doctor schedule: $e');
+    }
+  }
+
+  // Update schedule for a specific day
+  static Future<Map<String, dynamic>> updateDoctorSchedule({
+    required String dayName,
+    required String startTime,
+    required String endTime,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/schedules/${dayName.toLowerCase()}'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'start_time': startTime,
+          'end_time': endTime,
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to update schedule: $e');
+    }
+  }
+
+  // Check if doctor has appointments on specific day
+  static Future<Map<String, dynamic>> checkAppointmentsOnDay({
+    required String dayName,
+  }) async {
+    try {
+      final response = await http.get(
+        Uri.parse(
+            '${ApiConstants.baseUrl}/schedules/check-appointments?day=${dayName.toLowerCase()}'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to check appointments: $e');
+    }
+  }
+
+  // Get all days with appointments
+  static Future<Map<String, dynamic>> getDaysWithAppointments() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/schedules/days-with-appointments'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to get days with appointments: $e');
+    }
+  }
+
+  // Toggle schedule status for a specific day
+  static Future<Map<String, dynamic>> toggleScheduleStatus({
+    required String dayName,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse(
+            '${ApiConstants.baseUrl}/schedules/${dayName.toLowerCase()}/toggle-status'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to toggle schedule status: $e');
+    }
+  }
 
   // Helper method to handle responses
   static Map<String, dynamic> _handleResponse(http.Response response) {

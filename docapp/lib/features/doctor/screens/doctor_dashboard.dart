@@ -1,9 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../shared/services/auth_service.dart';
-import '../../auth/screens/login_screen.dart';
 import 'doctor_appointments_screen.dart';
 import 'doctor_profile_screen.dart';
+import 'doctor_schedule_screen.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -18,6 +16,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   final List<Widget> _screens = [
     const DoctorHomeScreen(),
     const DoctorAppointmentsScreen(),
+    const DoctorScheduleScreen(),
     const DoctorProfileScreen(),
   ];
 
@@ -42,6 +41,10 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
           BottomNavigationBarItem(
             icon: Icon(Icons.calendar_today),
             label: 'Appointments',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.schedule),
+            label: 'Schedule',
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
@@ -96,4 +99,3 @@ class DoctorHomeScreen extends StatelessWidget {
     );
   }
 }
-

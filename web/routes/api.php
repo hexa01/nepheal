@@ -87,7 +87,7 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::middleware('role:admin,doctor')->group(function () {
-            Route::put('/doctors/{doctor}', [DoctorController::class, 'update'])->name('api.doctors.update');
+            // Route::put('/doctors/{doctor}', [DoctorController::class, 'update'])->name('api.doctors.update');
             Route::put('/appointment/status/{appointment}', [AppointmentController::class, 'updateAppointmentStatus'])->name('api.appointment.status.update');
             Route::put('/appointment/message/{appointment}', [AppointmentController::class, 'updateDoctorMessage'])->name('api.message.update');
         });

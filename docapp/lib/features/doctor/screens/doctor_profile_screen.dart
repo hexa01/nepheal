@@ -66,15 +66,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       body: Consumer<AuthService>(
         builder: (context, authService, child) {
           final user = authService.user;
-          
+
           if (_isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (_error != null) {
             return _buildErrorState();
           }
-          
+
           if (user == null) {
             return const Center(child: Text('No user data available'));
           }
@@ -144,7 +144,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         MaterialPageRoute(
                           builder: (context) => ProfilePhotoScreen(
                             user: user,
-                            onPhotoUpdated: _updateUserPhoto,
+                            // onPhotoUpdated: _updateUserPhoto,
                           ),
                         ),
                       );
@@ -314,28 +314,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         ),
                       ),
                     );
-                    
+
                     if (result == true) {
                       // Profile was updated successfully - reload doctor data
                       await _loadDoctorData(); // ✅ RELOAD: Reload data after edit
                     }
                   },
                 ),
-
-                _buildActionButton(
-                  icon: Icons.schedule,
-                  title: 'Manage Schedule',
-                  subtitle: 'Update your availability hours',
-                  color: Colors.blue,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Schedule management coming soon!'),
-                      ),
-                    );
-                  },
-                ),
-
                 _buildActionButton(
                   icon: Icons.security,
                   title: 'Change Password',
@@ -347,28 +332,13 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         builder: (context) => ChangePasswordScreen(user: user),
                       ),
                     );
-                    
+
                     if (result == true) {
                       // Password was changed successfully
                       // Show additional confirmation if needed
                     }
                   },
                 ),
-
-                _buildActionButton(
-                  icon: Icons.analytics,
-                  title: 'View Analytics',
-                  subtitle: 'Check your practice statistics',
-                  color: Colors.purple,
-                  onTap: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text('Analytics feature coming soon!'),
-                      ),
-                    );
-                  },
-                ),
-
                 _buildActionButton(
                   icon: Icons.help,
                   title: 'Help & Support',

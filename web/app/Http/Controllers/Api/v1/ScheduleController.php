@@ -19,7 +19,7 @@ class ScheduleController extends BaseController
         $doctorId = Auth::user()->doctor->id;
 
         $schedules = Schedule::where('doctor_id', $doctorId)
-            ->select('id', 'doctor_id', 'day', 'start_time', 'end_time', 'slots', 'status', 'created_at', 'updated_at')
+            ->select('id', 'doctor_id', 'day', 'start_time', 'end_time', 'slot_count', 'status', 'created_at', 'updated_at')
             ->get()
             ->sortBy(function ($schedule) {
                 $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
@@ -90,12 +90,12 @@ class ScheduleController extends BaseController
         $startTime = Carbon::parse($request->start_time);
         $endTime = Carbon::parse($request->end_time);
         $durationMinutes = $startTime->diffInMinutes($endTime);
-        $slots = intdiv($durationMinutes, 30);
+        $slot_count = intdiv($durationMinutes, 30);
 
         $schedule->update([
             'start_time' => $startTime->format('H:i'),
             'end_time'   => $endTime->format('H:i'),
-            'slots'      => $slots,
+            'slot_count'      => $slot_count,
         ]);
 
         $data = [
@@ -105,7 +105,7 @@ class ScheduleController extends BaseController
                 'day'        => $schedule->day,
                 'start_time' => $schedule->start_time,
                 'end_time'   => $schedule->end_time,
-                'slots'      => $schedule->slots,
+                'slot_count'      => $schedule->slot_count,
                 'status'     => $schedule->status,
                 'created_at' => $schedule->created_at,
                 'updated_at' => $schedule->updated_at,
@@ -227,7 +227,7 @@ class ScheduleController extends BaseController
         }
 
         // Toggle status
-        $newStatus = $schedule->status === 'active' ? 'inactive' : 'active';
+        $newStatus = $schedule->status === 'available' ? 'unavailable' : 'available';
         $schedule->update(['status' => $newStatus]);
 
         $data = [
@@ -237,7 +237,7 @@ class ScheduleController extends BaseController
                 'day'        => $schedule->day,
                 'start_time' => $schedule->start_time,
                 'end_time'   => $schedule->end_time,
-                'slots'      => $schedule->slots,
+                'slot_count'      => $schedule->slot_count,
                 'status'     => $schedule->status,
                 'created_at' => $schedule->created_at,
                 'updated_at' => $schedule->updated_at,
