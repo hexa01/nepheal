@@ -262,26 +262,28 @@ class ApiService {
   }
 
   // Profile Photo Methods
-  
+
   // Upload profile photo
-  static Future<Map<String, dynamic>> uploadProfilePhoto(String imagePath) async {
+  static Future<Map<String, dynamic>> uploadProfilePhoto(
+      String imagePath) async {
     try {
       final uri = Uri.parse('${ApiConstants.baseUrl}/profile-photo/upload');
       final request = http.MultipartRequest('POST', uri);
-      
+
       // Add authorization header
       final token = StorageService.getToken();
       if (token != null) {
         request.headers['Authorization'] = 'Bearer $token';
       }
       request.headers['Accept'] = 'application/json';
-      
+
       // Add image file
-      request.files.add(await http.MultipartFile.fromPath('profile_photo', imagePath));
-      
+      request.files
+          .add(await http.MultipartFile.fromPath('profile_photo', imagePath));
+
       final streamedResponse = await request.send();
       final response = await http.Response.fromStream(streamedResponse);
-      
+
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Failed to upload profile photo: $e');
@@ -305,10 +307,10 @@ class ApiService {
   // Get profile photo
   static Future<Map<String, dynamic>> getProfilePhoto({int? userId}) async {
     try {
-      final url = userId != null 
+      final url = userId != null
           ? '${ApiConstants.baseUrl}/profile-photo/show/$userId'
           : '${ApiConstants.baseUrl}/profile-photo/show';
-          
+
       final response = await http.get(
         Uri.parse(url),
         headers: _getHeaders(),
@@ -421,6 +423,116 @@ class ApiService {
       throw Exception('Failed to cancel appointment: $e');
     }
   }
+
+// Update patient profile
+  static Future<Map<String, dynamic>> updatePatientProfile({
+    required int userId,
+    required String name,
+    required String email,
+    String? phone,
+    String? address,
+    required String gender,
+    bool emailChanged = false,
+  }) async {
+    try {
+      // Only include email in the request if it has changed
+      Map<String, dynamic> body = {
+        'name': name,
+        'phone': phone,
+        'address': address,
+        'gender': gender,
+      };
+
+      // Only add email if it has changed to avoid unique constraint issues
+      if (emailChanged) {
+        body['email'] = email;
+      }
+
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/patients/$userId'),
+        headers: _getHeaders(),
+        body: jsonEncode(body),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to update patient profile: $e');
+    }
+  }
+
+// Update doctor profile
+  static Future<Map<String, dynamic>> updateDoctorProfile({
+    required int userId,
+    required String name,
+    required String email,
+    String? phone,
+    String? address,
+    required String gender,
+    String? bio,
+    bool emailChanged = false,
+  }) async {
+    try {
+      // Only include email in the request if it has changed
+      Map<String, dynamic> body = {
+        'name': name,
+        'phone': phone,
+        'address': address,
+        'gender': gender,
+        'bio': bio, // Include bio for doctors
+      };
+
+      // Only add email if it has changed to avoid unique constraint issues
+      if (emailChanged) {
+        body['email'] = email;
+      }
+
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/doctors/$userId'),
+        headers: _getHeaders(),
+        body: jsonEncode(body),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to update doctor profile: $e');
+    }
+  }
+
+  // Get current doctor's profile
+  static Future<Map<String, dynamic>> getDoctorProfile() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.doctorView}'), // Use the doctor-view endpoint
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch doctor profile: $e');
+    }
+  }
+
+  static Future<Map<String, dynamic>> changePassword({
+  required String currentPassword,
+  required String newPassword,
+  required String confirmPassword,
+}) async {
+  try {
+    final response = await http.put(
+      Uri.parse('${ApiConstants.baseUrl}/change-password'),
+      headers: _getHeaders(),
+      body: jsonEncode({
+        'current_password': currentPassword,
+        'password': newPassword,
+        'password_confirmation': confirmPassword,
+      }),
+    );
+
+    return _handleResponse(response);
+  } catch (e) {
+    throw Exception('Failed to change password: $e');
+  }
+}
 
   // Helper method to handle responses
   static Map<String, dynamic> _handleResponse(http.Response response) {

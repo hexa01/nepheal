@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../../../shared/services/auth_service.dart';
 import '../../auth/screens/login_screen.dart';
 import 'doctor_appointments_screen.dart';
+import 'doctor_profile_screen.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -96,36 +97,3 @@ class DoctorHomeScreen extends StatelessWidget {
   }
 }
 
-// Profile screen
-class DoctorProfileScreen extends StatelessWidget {
-  const DoctorProfileScreen({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final authService =
-                  Provider.of<AuthService>(context, listen: false);
-              await authService.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: const Center(
-        child: Text('Doctor profile features coming soon...'),
-      ),
-    );
-  }
-}

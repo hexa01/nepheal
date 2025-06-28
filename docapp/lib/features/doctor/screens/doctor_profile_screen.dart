@@ -2,22 +2,46 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../shared/services/auth_service.dart';
 import '../../../shared/models/user.dart';
+import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../auth/screens/login_screen.dart';
 import '../../../shared/screens/profile_photo_screen.dart';
 import '../../../shared/screens/edit_profile_screen.dart';
 import '../../../shared/screens/change_password_screen.dart';
 
-class PatientProfileScreen extends StatefulWidget {
-  const PatientProfileScreen({super.key});
+class DoctorProfileScreen extends StatefulWidget {
+  const DoctorProfileScreen({super.key});
 
   @override
-  State<PatientProfileScreen> createState() => _PatientProfileScreenState();
+  State<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
 }
 
-class _PatientProfileScreenState extends State<PatientProfileScreen> {
+class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   bool _isLoading = false;
   String? _error;
+  String? _doctorBio; // ✅ ADD: Store doctor bio
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDoctorData(); // ✅ ADD: Load doctor data on init
+  }
+
+  // ✅ ADD: Load doctor data including bio
+  Future<void> _loadDoctorData() async {
+    try {
+      final response = await ApiService.getDoctorProfile();
+      if (response['success']) {
+        final doctorData = response['data']['doctor'];
+        setState(() {
+          _doctorBio = doctorData['bio'] ?? '';
+        });
+      }
+    } catch (e) {
+      // If bio fails to load, continue without it
+      print('Could not load doctor data: $e');
+    }
+  }
 
   void _updateUserPhoto(String? newPhotoUrl) {
     // AuthService is already updated by ProfilePhotoScreen
@@ -29,7 +53,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Profile'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         elevation: 0,
         actions: [
@@ -100,8 +124,8 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
                 colors: [
-                  Colors.blue.shade600,
-                  Colors.blue.shade400,
+                  Colors.green.shade600,
+                  Colors.green.shade400,
                 ],
               ),
             ),
@@ -129,14 +153,25 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                   const SizedBox(height: 16),
 
-                  Text(
-                    user.displayName,
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                    ),
-                    textAlign: TextAlign.center,
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.verified,
+                        color: Colors.white,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        'Dr. ${user.displayName}',
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ],
                   ),
 
                   const SizedBox(height: 4),
@@ -153,15 +188,53 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                         color: Colors.white.withValues(alpha: 0.3),
                       ),
                     ),
-                    child: Text(
-                      user.roleDisplayText,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        letterSpacing: 1,
-                      ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.local_hospital,
+                          color: Colors.white,
+                          size: 14,
+                        ),
+                        const SizedBox(width: 6),
+                        Text(
+                          'Medical Professional',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
                     ),
+                  ),
+
+                  const SizedBox(height: 16),
+
+                  // Quick Stats
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                    children: [
+                      _buildStatCard(
+                        icon: Icons.people,
+                        title: '150+',
+                        subtitle: 'Patients',
+                        color: Colors.white,
+                      ),
+                      _buildStatCard(
+                        icon: Icons.star,
+                        title: '4.8',
+                        subtitle: 'Rating',
+                        color: Colors.white,
+                      ),
+                      _buildStatCard(
+                        icon: Icons.work,
+                        title: '8+',
+                        subtitle: 'Years',
+                        color: Colors.white,
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -175,7 +248,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Personal Information',
+                  'Professional Information',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -202,7 +275,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 if (user.address != null && user.address!.isNotEmpty)
                   _buildInfoCard(
                     icon: Icons.location_on,
-                    title: 'Address',
+                    title: 'Clinic Address',
                     value: user.address!,
                     color: Colors.red,
                   ),
@@ -216,7 +289,7 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                 const SizedBox(height: 24),
 
-                // Action Buttons
+                // Account Actions
                 const Text(
                   'Account Actions',
                   style: TextStyle(
@@ -230,22 +303,36 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 _buildActionButton(
                   icon: Icons.edit,
                   title: 'Edit Profile',
-                  subtitle: 'Update your personal information',
-                  color: Colors.blue,
+                  subtitle: 'Update your professional information',
+                  color: Colors.green,
                   onTap: () async {
                     final result = await Navigator.of(context).push<bool>(
                       MaterialPageRoute(
                         builder: (context) => EditProfileScreen(
                           user: user,
-                          doctorBio: null, // ✅ Patients don't have bio
+                          doctorBio: _doctorBio, // ✅ PASS: Pass the loaded bio
                         ),
                       ),
                     );
                     
                     if (result == true) {
-                      // Profile was updated successfully
-                      // Consumer will automatically handle the UI update
+                      // Profile was updated successfully - reload doctor data
+                      await _loadDoctorData(); // ✅ RELOAD: Reload data after edit
                     }
+                  },
+                ),
+
+                _buildActionButton(
+                  icon: Icons.schedule,
+                  title: 'Manage Schedule',
+                  subtitle: 'Update your availability hours',
+                  color: Colors.blue,
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Schedule management coming soon!'),
+                      ),
+                    );
                   },
                 ),
 
@@ -269,14 +356,14 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                 ),
 
                 _buildActionButton(
-                  icon: Icons.notifications,
-                  title: 'Notifications',
-                  subtitle: 'Manage notification preferences',
-                  color: Colors.green,
+                  icon: Icons.analytics,
+                  title: 'View Analytics',
+                  subtitle: 'Check your practice statistics',
+                  color: Colors.purple,
                   onTap: () {
                     ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
-                        content: Text('Notification settings coming soon!'),
+                        content: Text('Analytics feature coming soon!'),
                       ),
                     );
                   },
@@ -324,6 +411,43 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                 const SizedBox(height: 24),
               ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatCard({
+    required IconData icon,
+    required String title,
+    required String subtitle,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.2),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+      ),
+      child: Column(
+        children: [
+          Icon(icon, color: color, size: 20),
+          const SizedBox(height: 4),
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+              color: color,
+            ),
+          ),
+          Text(
+            subtitle,
+            style: TextStyle(
+              fontSize: 11,
+              color: color.withValues(alpha: 0.8),
             ),
           ),
         ],
