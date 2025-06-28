@@ -18,24 +18,24 @@ class DoctorController extends BaseController
     public function index(Request $request)
     {
         $query = Doctor::with('user', 'specialization');
-        
+
         // Add specialization filtering if requested
         if ($request->has('specialization_id') && $request->specialization_id != '') {
             $query->where('specialization_id', $request->specialization_id);
         }
-        
+
         // Add search by name if requested
         if ($request->has('search') && $request->search != '') {
-            $query->whereHas('user', function($q) use ($request) {
+            $query->whereHas('user', function ($q) use ($request) {
                 $q->where('name', 'like', '%' . $request->search . '%');
             });
         }
-        
+
         $doctors = $query->get();
 
-        if ($doctors->isEmpty()) {
-            return $this->errorResponse('No doctors found', 404);
-        }
+        // if ($doctors->isEmpty()) {
+        //     return $this->errorResponse('No doctors found', 404);
+        // }
 
         $data = $doctors->map(function ($doctor) {
             return [
@@ -54,6 +54,11 @@ class DoctorController extends BaseController
             ];
         });
 
+        // Always return success - empty array is a valid result
+        $message = $doctors->isEmpty()
+            ? 'No doctors found matching your criteria'
+            : 'Doctors retrieved successfully';
+
         return $this->successResponse('Doctors retrieved successfully', $data);
     }
 
@@ -71,11 +76,11 @@ class DoctorController extends BaseController
     public function show(string $id)
     {
         $doctor = Doctor::with(['user', 'specialization'])->find($id);
-        
+
         if (!$doctor) {
             return $this->errorResponse('Doctor not found', 404);
         }
-        
+
         return $this->successResponse('Doctor retrieved successfully', [
             'id' => $doctor->id,
             'user' => [
