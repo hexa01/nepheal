@@ -11,8 +11,13 @@ import 'doctor_reviews_screen.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final Doctor doctor;
+  final DoctorRatingStats? existingRatingStats; // Accept cached rating data
 
-  const DoctorProfileScreen({super.key, required this.doctor});
+  const DoctorProfileScreen({
+    super.key, 
+    required this.doctor,
+    this.existingRatingStats, // Optional cached rating
+  });
 
   @override
   State<DoctorProfileScreen> createState() => _DoctorProfileScreenState();
@@ -29,31 +34,47 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   @override
   void initState() {
     super.initState();
-    _loadDoctorDetails();
-    _loadDoctorReviews();
+    // Show existing rating immediately if available
+    if (widget.existingRatingStats != null) {
+      _ratingStats = widget.existingRatingStats;
+    }
+    _loadDoctorData();
   }
 
-  Future<void> _loadDoctorDetails() async {
+  Future<void> _loadDoctorData() async {
     setState(() {
       _isLoading = true;
+      _isLoadingReviews = true;
       _error = null;
     });
 
     try {
-      final response = await ApiService.getDoctorById(widget.doctor.id);
+      // Create futures list - only load rating if not already provided
+      List<Future> futures = [
+        ApiService.getDoctorById(widget.doctor.id),
+        ApiService.getDoctorReviews(doctorId: widget.doctor.id, page: 1, perPage: 3),
+      ];
 
-      if (response['success']) {
-        // Parse the doctor data from your backend response
-        final data = response['data'];
+      // Only load rating stats if we don't have them already
+      if (widget.existingRatingStats == null) {
+        futures.add(ApiService.getDoctorRatingStats(widget.doctor.id));
+      }
 
-        // Create a Doctor object with the real API data
+      final results = await Future.wait(futures);
+      
+      final doctorResponse = results[0];
+      final reviewsResponse = results[1];
+      final statsResponse = results.length > 2 ? results[2] : null;
+
+      // Process doctor details
+      if (doctorResponse['success']) {
+        final data = doctorResponse['data'];
         setState(() {
           _detailedDoctor = Doctor(
             id: data['id'],
             userId: data['user']['id'] ?? 0,
             specializationId: data['specialization_id'],
-            hourlyRate:
-                double.tryParse(data['hourly_rate']?.toString() ?? '0') ?? 0.0,
+            hourlyRate: double.tryParse(data['hourly_rate']?.toString() ?? '0') ?? 0.0,
             bio: data['bio'],
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
@@ -64,7 +85,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               role: data['user']['role'] ?? 'doctor',
               address: data['user']['address'],
               phone: data['user']['phone'],
-              gender: 'male', // Default
+              gender: 'male',
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             ),
@@ -75,57 +96,36 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               updatedAt: DateTime.now(),
             ),
           );
-          _isLoading = false;
         });
       } else {
         setState(() {
-          _detailedDoctor = widget.doctor; // Fallback to basic info
-          _isLoading = false;
+          _detailedDoctor = widget.doctor;
         });
       }
-    } catch (e) {
-      setState(() {
-        _detailedDoctor = widget.doctor; // Fallback to basic info
-        _isLoading = false;
-      });
-      print('Doctor details error: $e');
-    }
-  }
 
-  Future<void> _loadDoctorReviews() async {
-    setState(() {
-      _isLoadingReviews = true;
-    });
-
-    try {
-      // Load both rating stats and recent reviews
-      final futures = await Future.wait([
-        ApiService.getDoctorRatingStats(widget.doctor.id),
-        ApiService.getDoctorReviews(
-            doctorId: widget.doctor.id, page: 1, perPage: 3),
-      ]);
-
-      final statsResponse = futures[0];
-      final reviewsResponse = futures[1];
-
-      if (statsResponse['success']) {
+      // Process rating stats only if not provided initially
+      if (widget.existingRatingStats == null && statsResponse != null && statsResponse['success']) {
         setState(() {
           _ratingStats = DoctorRatingStats.fromJson(statsResponse['data']);
         });
       }
 
+      // Process recent reviews
       if (reviewsResponse['success']) {
         final reviewsData = reviewsResponse['data']['reviews'] as List;
         setState(() {
-          _recentReviews =
-              reviewsData.map((json) => Review.fromJson(json)).toList();
+          _recentReviews = reviewsData.map((json) => Review.fromJson(json)).toList();
         });
       }
+
     } catch (e) {
-      // Don't show error for reviews, just fail silently
-      print('Error loading reviews: $e');
+      setState(() {
+        _detailedDoctor = widget.doctor;
+      });
+      print('Error loading doctor data: $e');
     } finally {
       setState(() {
+        _isLoading = false;
         _isLoadingReviews = false;
       });
     }
@@ -244,7 +244,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Availability Indicator with Real Rating
+                        // Availability Indicator with Instant Rating
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -269,7 +269,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                 ),
                               ],
                             ),
-                            // Show real rating data
+                            // Show rating immediately from cache or API
                             if (_ratingStats != null &&
                                 _ratingStats!.totalReviews > 0)
                               Container(
@@ -319,7 +319,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                   borderRadius: BorderRadius.circular(16),
                                 ),
                                 child: Text(
-                                  'New Doctor',
+                                  'No reviews',
                                   style: TextStyle(
                                     color: Colors.white.withValues(alpha: 0.9),
                                     fontSize: 12,
@@ -344,7 +344,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Quick Stats Cards - Now with real data
+                  // Quick Stats Cards - Now with instant data
                   Row(
                     children: [
                       Expanded(
@@ -356,7 +356,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                           subtitle: _ratingStats != null &&
                                   _ratingStats!.totalReviews > 0
                               ? '${_ratingStats!.totalReviews} reviews'
-                              : 'No reviews yet',
+                              : 'No reviews',
                           color: Colors.amber,
                         ),
                       ),
@@ -561,7 +561,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Rating Summary Card - Real Data
+                  // Rating Summary Card - Instant Data
                   if (_ratingStats != null &&
                       _ratingStats!.totalReviews > 0) ...[
                     Container(
@@ -671,7 +671,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     const SizedBox(height: 20),
                   ],
 
-                  // Recent Reviews - Real Data
+                  // Recent Reviews - Load after page loads
                   if (_isLoadingReviews)
                     Container(
                       padding: const EdgeInsets.all(40),
@@ -734,7 +734,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                           ),
                           const SizedBox(height: 12),
                           Text(
-                            'No Reviews Yet',
+                            'No reviews',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,

@@ -519,7 +519,10 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
         onTap: () {
           Navigator.of(context).push(
             MaterialPageRoute(
-              builder: (context) => DoctorProfileScreen(doctor: doctor),
+              builder: (context) => DoctorProfileScreen(
+                doctor: doctor,
+                existingRatingStats: ratingStats, // Pass the cached rating data
+              ),
             ),
           );
         },
@@ -756,8 +759,11 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       onPressed: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (context) =>
-                                DoctorProfileScreen(doctor: doctor),
+                            builder: (context) => DoctorProfileScreen(
+                              doctor: doctor,
+                              existingRatingStats:
+                                  ratingStats, // Pass cached rating
+                            ),
                           ),
                         );
                       },
@@ -843,8 +849,6 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
       ),
     );
   }
-
-
 
   IconData _getSpecializationIcon(String specialization) {
     switch (specialization.toLowerCase().trim()) {
