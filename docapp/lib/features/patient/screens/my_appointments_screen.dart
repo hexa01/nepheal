@@ -232,7 +232,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
     final doctorSpecialization =
         appointment['doctor_specialization'] ?? 'General';
     final appointmentId = appointment['id'];
-    final doctorId = appointment['doctor_id'];
 
     // Convert appointmentId to int for consistent comparison
     int? aptId;
@@ -270,7 +269,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
       ),
       child: Column(
         children: [
-          // Header with Status - FIXED OVERFLOW
+          // Header with Status - FIXED OVERFLOW AND REMOVED APPOINTMENT ID
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
@@ -281,120 +280,73 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                 topRight: Radius.circular(18),
               ),
             ),
-            child: Column(
+            child: Row(
               children: [
-                // First row: Status info and appointment ID
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: statusConfig.color.withValues(alpha: 0.2),
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Icon(
-                              statusConfig.icon,
-                              size: 20,
-                              color: statusConfig.color,
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  statusConfig.title,
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: statusConfig.color,
-                                  ),
-                                ),
-                                Text(
-                                  statusConfig.subtitle,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: statusConfig.color
-                                        .withValues(alpha: 0.8),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: statusConfig.color.withValues(alpha: 0.2),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Icon(
+                    statusConfig.icon,
+                    size: 20,
+                    color: statusConfig.color,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        statusConfig.title,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: statusConfig.color,
+                        ),
                       ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.8),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: Text(
-                        '#$aptId',
+                      Text(
+                        statusConfig.subtitle,
                         style: TextStyle(
                           fontSize: 12,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-
-                // Second row: Review status (only for completed appointments)
-                if (isCompleted) ...[
-                  const SizedBox(height: 12),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: hasBeenReviewed
-                              ? Colors.amber.shade100
-                              : Colors.grey.shade100,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: hasBeenReviewed
-                                ? Colors.amber.shade300
-                                : Colors.grey.shade300,
-                          ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              hasBeenReviewed ? Icons.star : Icons.star_border,
-                              size: 14,
-                              color: hasBeenReviewed
-                                  ? Colors.amber.shade600
-                                  : Colors.grey.shade500,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              hasBeenReviewed ? 'Reviewed' : 'Not reviewed',
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: hasBeenReviewed
-                                    ? Colors.amber.shade700
-                                    : Colors.grey.shade600,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                          color: statusConfig.color.withValues(alpha: 0.8),
                         ),
                       ),
                     ],
                   ),
-                ],
+                ),
+                // Show "Reviewed" badge if appointment has been reviewed
+                if (isCompleted && hasBeenReviewed)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      color: Colors.amber.shade100,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.amber.shade300),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.star,
+                          size: 14,
+                          color: Colors.amber.shade600,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Reviewed',
+                          style: TextStyle(
+                            fontSize: 12,
+                            color: Colors.amber.shade700,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
               ],
             ),
           ),
@@ -615,57 +567,32 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen> {
                   ),
                 ],
 
-                // Show "Already Reviewed" for completed and reviewed appointments
+                // FIXED: Show "View Review" button for completed and reviewed appointments
                 if (isCompleted && hasBeenReviewed) ...[
-                  const SizedBox(height: 16),
-                  Container(
+                  const SizedBox(height: 20),
+                  SizedBox(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(12),
-                    decoration: BoxDecoration(
-                      color: Colors.green.shade50,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.green.shade200),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.check_circle,
-                            size: 16, color: Colors.green.shade600),
-                        const SizedBox(width: 8),
-                        Text(
-                          'Thank you for your review!',
-                          style: TextStyle(
-                            color: Colors.green.shade700,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12,
-                          ),
+                    child: OutlinedButton.icon(
+                      onPressed: () {
+                        Navigator.of(context)
+                            .push(
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    const MyReviewsScreen(),
+                              ),
+                            )
+                            .then((_) => _loadAppointments());
+                      },
+                      icon: const Icon(Icons.visibility, size: 18),
+                      label: const Text('View Review'),
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.green,
+                        side: BorderSide(color: Colors.green.shade300),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(width: 8),
-                        TextButton(
-                          onPressed: () {
-                            Navigator.of(context)
-                                .push(
-                                  MaterialPageRoute(
-                                    builder: (context) =>
-                                        const MyReviewsScreen(),
-                                  ),
-                                )
-                                .then((_) => _loadAppointments());
-                          },
-                          style: TextButton.styleFrom(
-                            padding: const EdgeInsets.symmetric(horizontal: 8),
-                            minimumSize: Size.zero,
-                          ),
-                          child: Text(
-                            'View Review',
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Colors.green.shade600,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                        ),
-                      ],
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
                     ),
                   ),
                 ],
