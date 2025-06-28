@@ -197,7 +197,7 @@ class ApiService {
     }
   }
 
-  // Get patient's reviews with better error handling
+  // Get patient's reviews
   static Future<Map<String, dynamic>> getPatientReviews() async {
     try {
       final response = await http.get(
@@ -205,64 +205,9 @@ class ApiService {
         headers: _getHeaders(),
       );
 
-      // Handle different response scenarios
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
-        return data;
-      } else if (response.statusCode == 404) {
-        // Handle "no reviews found" case
-        try {
-          final data = jsonDecode(response.body);
-          final message = data['message']?.toString().toLowerCase() ?? '';
-
-          if (message.contains('no reviews') || message.contains('not found')) {
-            return {
-              'success': true,
-              'message': 'No reviews found',
-              'data': {'reviews': []}
-            };
-          }
-        } catch (e) {
-          // Ignore parsing error
-        }
-
-        // Default to empty reviews for 404
-        return {
-          'success': true,
-          'message': 'No reviews found',
-          'data': {'reviews': []}
-        };
-      } else if (response.statusCode == 401) {
-        throw Exception('Authentication failed. Please login again.');
-      } else if (response.statusCode >= 500) {
-        throw Exception('Server error. Please try again later.');
-      } else {
-        // Try to parse error message from response
-        try {
-          final data = jsonDecode(response.body);
-          throw Exception(data['message'] ?? 'Failed to fetch reviews');
-        } catch (e) {
-          throw Exception(
-              'Failed to fetch reviews: HTTP ${response.statusCode}');
-        }
-      }
+      return _handleResponse(response);
     } catch (e) {
-      // Return empty reviews for network errors to prevent breaking appointments
-      if (e.toString().contains('SocketException') ||
-          e.toString().contains('TimeoutException')) {
-        return {
-          'success': true,
-          'message': 'Network error - no reviews loaded',
-          'data': {'reviews': []}
-        };
-      }
-
-      // For other errors, also return empty to prevent breaking appointments
-      return {
-        'success': true,
-        'message': 'Error loading reviews',
-        'data': {'reviews': []}
-      };
+      throw Exception('Failed to fetch patient reviews: $e');
     }
   }
 
@@ -274,23 +219,9 @@ class ApiService {
         headers: _getHeaders(),
       );
 
-      // Handle 404 case for reviewable appointments
-      if (response.statusCode == 404) {
-        return {
-          'success': true,
-          'message': 'No reviewable appointments found',
-          'data': {'appointments': []}
-        };
-      }
-
       return _handleResponse(response);
     } catch (e) {
-      // Return empty appointments instead of throwing error
-      return {
-        'success': true,
-        'message': 'No reviewable appointments found',
-        'data': {'appointments': []}
-      };
+      throw Exception('Failed to fetch reviewable appointments: $e');
     }
   }
 
@@ -330,6 +261,65 @@ class ApiService {
     }
   }
 
+  // Profile Photo Methods
+  
+  // Upload profile photo
+  static Future<Map<String, dynamic>> uploadProfilePhoto(String imagePath) async {
+    try {
+      final uri = Uri.parse('${ApiConstants.baseUrl}/profile-photo/upload');
+      final request = http.MultipartRequest('POST', uri);
+      
+      // Add authorization header
+      final token = StorageService.getToken();
+      if (token != null) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+      request.headers['Accept'] = 'application/json';
+      
+      // Add image file
+      request.files.add(await http.MultipartFile.fromPath('profile_photo', imagePath));
+      
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+      
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to upload profile photo: $e');
+    }
+  }
+
+  // Delete profile photo
+  static Future<Map<String, dynamic>> deleteProfilePhoto() async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/profile-photo/delete'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to delete profile photo: $e');
+    }
+  }
+
+  // Get profile photo
+  static Future<Map<String, dynamic>> getProfilePhoto({int? userId}) async {
+    try {
+      final url = userId != null 
+          ? '${ApiConstants.baseUrl}/profile-photo/show/$userId'
+          : '${ApiConstants.baseUrl}/profile-photo/show';
+          
+      final response = await http.get(
+        Uri.parse(url),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to get profile photo: $e');
+    }
+  }
+
   // Specializations
   static Future<Map<String, dynamic>> getSpecializations() async {
     try {
@@ -362,33 +352,13 @@ class ApiService {
     }
   }
 
-  // Appointments with better error handling
+  // Appointments
   static Future<Map<String, dynamic>> getAppointments() async {
     try {
       final response = await http.get(
         Uri.parse(ApiConstants.appointments),
         headers: _getHeaders(),
       );
-
-      // Handle 404 specifically for no appointments
-      if (response.statusCode == 404) {
-        try {
-          final data = jsonDecode(response.body);
-          if (data['message'] != null &&
-              data['message']
-                  .toString()
-                  .toLowerCase()
-                  .contains('no appointments found')) {
-            return {
-              'success': true,
-              'message': 'No appointments found',
-              'data': {'appointments': []}
-            };
-          }
-        } catch (e) {
-          // Ignore parsing error
-        }
-      }
 
       return _handleResponse(response);
     } catch (e) {
