@@ -135,34 +135,35 @@ class ReviewController extends BaseController
     /**
      * Get patient's reviews.
      */
-    public function getPatientReviews()
-    {
-        $patient = Auth::user()->patient;
-        
-        if (!$patient) {
-            return $this->errorResponse('Patient profile not found', 404);
-        }
-
-        $reviews = Review::with(['doctor.user', 'appointment'])
-            ->byPatient($patient->id)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $formattedReviews = $reviews->map(function ($review) {
-            return [
-                'id' => $review->id,
-                'rating' => $review->rating,
-                'comment' => $review->comment,
-                'created_at' => $review->created_at->format('Y-m-d H:i:s'),
-                'doctor_name' => $review->doctor->user->name,
-                'appointment_date' => $review->appointment->appointment_date,
-            ];
-        });
-
-        return $this->successResponse('Patient reviews retrieved successfully', [
-            'reviews' => $formattedReviews
-        ]);
+public function getPatientReviews()
+{
+    $patient = Auth::user()->patient;
+    
+    if (!$patient) {
+        return $this->errorResponse('Patient profile not found', 404);
     }
+
+    $reviews = Review::with(['doctor.user', 'appointment'])
+        ->byPatient($patient->id)
+        ->orderBy('created_at', 'desc')
+        ->get();
+
+    $formattedReviews = $reviews->map(function ($review) {
+        return [
+            'id' => $review->id,
+            'appointment_id' => $review->appointment_id, // ← THIS WAS MISSING!
+            'rating' => $review->rating,
+            'comment' => $review->comment,
+            'created_at' => $review->created_at->format('Y-m-d H:i:s'),
+            'doctor_name' => $review->doctor->user->name,
+            'appointment_date' => $review->appointment->appointment_date,
+        ];
+    });
+
+    return $this->successResponse('Patient reviews retrieved successfully', [
+        'reviews' => $formattedReviews
+    ]);
+}
 
     /**
      * Get appointments that can be reviewed by the patient.

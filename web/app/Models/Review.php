@@ -16,6 +16,8 @@ class Review extends Model
 
     protected $casts = [
         'rating' => 'integer',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**

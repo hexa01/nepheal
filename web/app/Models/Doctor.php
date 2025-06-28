@@ -55,17 +55,33 @@ class Doctor extends Model
     /**
      * Get reviews count by rating (1-5 stars).
      */
-    public function getReviewsCountByRating()
+     public function getReviewsCountByRating()
     {
-        return $this->reviews()
-            ->selectRaw('rating, COUNT(*) as count')
-            ->groupBy('rating')
-            ->pluck('count', 'rating')
-            ->toArray();
+        $breakdown = [];
+        
+        for ($rating = 1; $rating <= 5; $rating++) {
+            $breakdown[$rating] = $this->reviews()
+                ->where('rating', $rating)
+                ->count();
+        }
+        
+        return $breakdown;
     }
 
     /**
-     * Check if doctor has any reviews.
+     * Get recent reviews with patient info
+     */
+    public function getRecentReviews($limit = 3)
+    {
+        return $this->reviews()
+            ->with(['patient.user'])
+            ->orderBy('created_at', 'desc')
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * Check if doctor has any reviews
      */
     public function hasReviews()
     {
