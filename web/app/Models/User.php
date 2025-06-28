@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -22,6 +23,7 @@ class User extends Authenticatable
     protected $fillable = [
         'name',
         'email',
+        'profile_photo',
         'role',
         'address',
         'phone',
@@ -53,20 +55,41 @@ class User extends Authenticatable
         ];
     }
 
-        public function patient()
+    public function patient()
     {
         return $this->hasOne(Patient::class);
     }
-
 
     public function doctor()
     {
         return $this->hasOne(Doctor::class);
     }
 
-        public function hasRole($role): bool
+    public function hasRole($role): bool
     {
         return $this->role === $role;
     }
 
+    /**
+     * Get the profile photo URL.
+     */
+    public function getProfilePhotoUrlAttribute()
+    {
+        if ($this->profile_photo) {
+            return url('storage/profile_photos/' . $this->profile_photo);
+        }
+        return null;
+    }
+
+    /**
+     * Get user initials for avatar fallback.
+     */
+    public function getInitialsAttribute()
+    {
+        $nameParts = explode(' ', trim($this->name));
+        if (count($nameParts) >= 2) {
+            return strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[1], 0, 1));
+        }
+        return strtoupper(substr($this->name, 0, 2));
+    }
 }

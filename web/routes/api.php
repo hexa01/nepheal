@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\v1\DoctorController;
 use App\Http\Controllers\Api\v1\AdminController;
 use App\Http\Controllers\Api\v1\AppointmentController;
 use App\Http\Controllers\Api\v1\PatientController;
+use App\Http\Controllers\Api\v1\ProfilePhotoController;
 use App\Http\Controllers\Api\v1\ScheduleController;
 use App\Http\Controllers\Api\v1\SlotController;
 use App\Http\Controllers\Api\v1\SpecializationController;
@@ -33,6 +34,13 @@ Route::prefix('v1')->group(function () {
         Route::get('/specializations', [SpecializationController::class, 'index'])->name('api.specializations.index');
         Route::apiResource('appointments',AppointmentController::class)->names('api.appointments');
         Route::apiResource('doctors',DoctorController::class)->except('store')->names('api.doctors');
+
+                // Profile Photo Routes
+        Route::prefix('profile-photo')->group(function () {
+            Route::post('/upload', [ProfilePhotoController::class, 'upload'])->name('api.profile.photo.upload');
+            Route::delete('/delete', [ProfilePhotoController::class, 'delete'])->name('api.profile.photo.delete');
+            Route::get('/show/{userId?}', [ProfilePhotoController::class, 'show'])->name('api.profile.photo.show');
+        });
 
         // Review Routes
         Route::prefix('reviews')->group(function () {
