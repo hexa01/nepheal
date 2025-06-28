@@ -41,8 +41,9 @@ class User {
       profilePhoto: json['profile_photo'],
       profilePhotoUrl: json['profile_photo_url'],
       dob: json['dob'] != null ? DateTime.parse(json['dob']) : null,
-      emailVerifiedAt: json['email_verified_at'] != null 
-          ? DateTime.parse(json['email_verified_at']) : null,
+      emailVerifiedAt: json['email_verified_at'] != null
+          ? DateTime.parse(json['email_verified_at'])
+          : null,
       createdAt: DateTime.parse(json['created_at']),
       updatedAt: DateTime.parse(json['updated_at']),
     );
@@ -72,10 +73,12 @@ class User {
     if (nameParts.length >= 2) {
       return '${nameParts[0][0]}${nameParts[1][0]}'.toUpperCase();
     }
-    return name.isNotEmpty ? name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase() : 'U';
+    return name.isNotEmpty
+        ? name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase()
+        : 'U';
   }
 
-  // Create a copy of the user with updated fields
+  // Create a copy of the user
   User copyWith({
     int? id,
     String? name,
@@ -86,6 +89,8 @@ class User {
     String? gender,
     String? profilePhoto,
     String? profilePhotoUrl,
+    bool updateProfilePhotoUrl =
+        false, // ✅ NEW: Flag to indicate we want to update photo URL
     DateTime? dob,
     DateTime? emailVerifiedAt,
     DateTime? createdAt,
@@ -100,7 +105,9 @@ class User {
       phone: phone ?? this.phone,
       gender: gender ?? this.gender,
       profilePhoto: profilePhoto ?? this.profilePhoto,
-      profilePhotoUrl: profilePhotoUrl ?? this.profilePhotoUrl,
+      profilePhotoUrl: updateProfilePhotoUrl
+          ? profilePhotoUrl
+          : this.profilePhotoUrl, // ✅ FIXED
       dob: dob ?? this.dob,
       emailVerifiedAt: emailVerifiedAt ?? this.emailVerifiedAt,
       createdAt: createdAt ?? this.createdAt,
@@ -109,7 +116,8 @@ class User {
   }
 
   // Check if user has a profile photo
-  bool get hasProfilePhoto => profilePhotoUrl != null && profilePhotoUrl!.isNotEmpty;
+  bool get hasProfilePhoto =>
+      profilePhotoUrl != null && profilePhotoUrl!.isNotEmpty;
 
   // Get display name for UI
   String get displayName => name.isNotEmpty ? name : 'Unknown User';

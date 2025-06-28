@@ -8,7 +8,6 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
-use Intervention\Image\ImageManager as Image;
 
 class ProfilePhotoController extends BaseController
 {
@@ -22,7 +21,7 @@ class ProfilePhotoController extends BaseController
         ]);
 
         $user = Auth::user();
-        
+
         try {
             // Delete old profile photo if exists
             if ($user->profile_photo) {
@@ -39,24 +38,29 @@ class ProfilePhotoController extends BaseController
                 Storage::disk('public')->makeDirectory('profile_photos');
             }
 
-// create new image instance (800 x 600)
-$resizedImage = Image::imagick()->read($image);
-$image = $resizedImage->resizeDown(300, 300); // 800 x 100
-
-            // Store the resized image
-            Storage::disk('public')->put('profile_photos/' . $filename, $resizedImage);
+            // Store the image file properly
+            $path = $image->storeAs('profile_photos', $filename, 'public');
+            
+            if (!$path) {
+                throw new \Exception('Failed to store image file');
+            }
 
             // Update user profile photo
             $user->update(['profile_photo' => $filename]);
 
+            // Refresh user model to get updated data
+            $user->refresh();
+
             $data = [
                 'profile_photo_url' => $user->profile_photo_url,
                 'profile_photo' => $user->profile_photo,
+                'message' => 'Profile photo uploaded successfully',
             ];
 
             return $this->successResponse('Profile photo uploaded successfully', $data);
 
         } catch (\Exception $e) {
+            \Log::error('Profile photo upload error: ' . $e->getMessage());
             return $this->errorResponse('Failed to upload profile photo: ' . $e->getMessage(), 500);
         }
     }
@@ -82,6 +86,7 @@ $image = $resizedImage->resizeDown(300, 300); // 800 x 100
             return $this->errorResponse('No profile photo to delete', 404);
 
         } catch (\Exception $e) {
+            \Log::error('Profile photo delete error: ' . $e->getMessage());
             return $this->errorResponse('Failed to delete profile photo: ' . $e->getMessage(), 500);
         }
     }
@@ -101,6 +106,7 @@ $image = $resizedImage->resizeDown(300, 300); // 800 x 100
             'profile_photo_url' => $user->profile_photo_url,
             'profile_photo' => $user->profile_photo,
             'initials' => $user->initials,
+            'name' => $user->name,
         ];
 
         return $this->successResponse('Profile photo retrieved successfully', $data);

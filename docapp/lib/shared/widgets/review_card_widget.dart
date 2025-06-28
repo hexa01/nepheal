@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/review.dart';
 import 'rating_widget.dart';
+import 'profile_avatar_widget.dart';
 
 class ReviewCard extends StatelessWidget {
   final Review review;
@@ -35,25 +36,13 @@ class ReviewCard extends StatelessWidget {
             // Header with avatar and rating
             Row(
               children: [
-                // Patient/Doctor Avatar
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade100,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Center(
-                    child: Text(
-                      review.patientInitials ??
-                          _getInitials(review.patientName ?? 'U'),
-                      style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.blue.shade700,
-                      ),
-                    ),
-                  ),
+                // Patient/Doctor Avatar with Profile Photo Support
+                CompactProfileAvatar(
+                  imageUrl: null, // Review model doesn't include profile photo URL yet
+                  initials: review.patientInitials ?? _getInitials(review.patientName ?? 'U'),
+                  size: 40,
+                  backgroundColor: Colors.blue.shade100,
+                  textColor: Colors.blue.shade700,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

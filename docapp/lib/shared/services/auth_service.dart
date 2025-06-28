@@ -123,6 +123,36 @@ class AuthService extends ChangeNotifier {
     _setLoading(false);
   }
 
+  // NEW: Update user profile photo
+  void updateUserPhoto(String? newPhotoUrl) {
+    if (_user != null) {
+      _user = _user!.copyWith(
+        profilePhotoUrl: newPhotoUrl,
+        updateProfilePhotoUrl: true, // ✅ ADD THIS FLAG
+      );
+      notifyListeners();
+    }
+  }
+
+  // NEW: Update user data
+  void updateUser(User updatedUser) {
+    _user = updatedUser;
+    notifyListeners();
+  }
+
+  // NEW: Refresh user data from server
+  Future<void> refreshUserData() async {
+    try {
+      final response = await ApiService.getProfilePhoto();
+      if (response['success'] && _user != null) {
+        final photoUrl = response['data']['profile_photo_url'];
+        updateUserPhoto(photoUrl);
+      }
+    } catch (e) {
+      debugPrint('Failed to refresh user data: $e');
+    }
+  }
+
   void _setLoading(bool loading) {
     _isLoading = loading;
     notifyListeners();

@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../shared/services/auth_service.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/specialization.dart';
 import '../../../core/storage/storage_service.dart';
-import '../../auth/screens/login_screen.dart';
+
 import 'doctors_list_screen.dart';
+import 'patient_profile_screen.dart';
 import 'my_appointments_screen.dart';
 import 'my_reviews_screen.dart';
 
@@ -744,35 +743,5 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   }
 }
 
-class PatientProfileScreen extends StatelessWidget {
-  const PatientProfileScreen({super.key});
 
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              final authService =
-                  Provider.of<AuthService>(context, listen: false);
-              await authService.logout();
-              if (context.mounted) {
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              }
-            },
-          ),
-        ],
-      ),
-      body: const Center(
-        child: Text('Profile features coming soon...'),
-      ),
-    );
-  }
-}
+//

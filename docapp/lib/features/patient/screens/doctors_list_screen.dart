@@ -4,6 +4,7 @@ import '../../../shared/models/doctor.dart';
 import '../../../shared/models/review.dart';
 import '../../../shared/models/specialization.dart';
 import '../../../shared/widgets/rating_widget.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 import 'book_appointment_screen.dart';
 import 'doctor_profile_screen.dart';
 
@@ -506,7 +507,6 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
     );
   }
 
-// Replace the entire _buildDoctorCard method with this fixed version
   Widget _buildDoctorCard(Doctor doctor, DoctorRatingStats? ratingStats) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -534,31 +534,14 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
             children: [
               Row(
                 children: [
-                  // Enhanced Doctor Avatar
-                  Container(
-                    width: 70,
-                    height: 70,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.blue.shade100, Colors.blue.shade200],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      borderRadius: BorderRadius.circular(35),
-                      border: Border.all(color: Colors.blue.shade300, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.blue.withValues(alpha: 0.2),
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ],
-                    ),
-                    child: Icon(
-                      Icons.person,
-                      size: 35,
-                      color: Colors.blue.shade700,
-                    ),
+                  // Enhanced Doctor Avatar with Profile Photo
+                  CompactProfileAvatar(
+                    imageUrl: doctor.user?.profilePhotoUrl,
+                    initials: doctor.user?.initials ?? 
+                             doctor.name.split(' ').map((n) => n[0]).take(2).join().toUpperCase(),
+                    size: 70,
+                    backgroundColor: Colors.blue.shade100,
+                    textColor: Colors.blue.shade700,
                   ),
                   const SizedBox(width: 16),
                   Expanded(
