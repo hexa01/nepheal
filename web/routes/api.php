@@ -66,6 +66,12 @@ Route::prefix('v1')->group(function () {
         Route::middleware('role:doctor')->group(function () {
             Route::get('/doctor-view', [DoctorController::class, 'view'])->name('api.doctors.view');
             Route::get('/patients-view', [DoctorController::class, 'viewPatients'])->name('api.doctors.patients.view');
+
+            Route::apiResource('/schedules',ScheduleController::class)->only(['index','update'])->names('api.schedules');
+        Route::get('/schedules/check-appointments', [ScheduleController::class, 'checkAppointments'])->name('api.schedules.check-appointments');
+        Route::get('/schedules/days-with-appointments', [ScheduleController::class, 'getDaysWithAppointments'])->name('api.schedules.days-with-appointments');
+        Route::put('/schedules/{day_name}/toggle-status', [ScheduleController::class, 'toggleStatus'])->name('api.schedules.toggle-status');
+
         });
 
         Route::middleware('role:admin')->group(function () {
@@ -91,6 +97,5 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('slots', SlotController::class)->only(['index'])->names('api.slots');
         });
 
-        Route::apiResource('/schedules', ScheduleController::class)->only(['index', 'update'])->names('api.schedules')->middleware('role:doctor');
     });
 });
