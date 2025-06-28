@@ -506,6 +506,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
     );
   }
 
+// Replace the entire _buildDoctorCard method with this fixed version
   Widget _buildDoctorCard(Doctor doctor, DoctorRatingStats? ratingStats) {
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -561,15 +562,80 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          doctor.name.isNotEmpty
-                              ? doctor.name
-                              : 'Unknown Doctor',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
+                        // Doctor Name with Rating in same row
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                doctor.name.isNotEmpty
+                                    ? doctor.name
+                                    : 'Unknown Doctor',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.black87,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            // Compact Rating Display
+                            if (ratingStats != null &&
+                                ratingStats.totalReviews > 0)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.amber.shade50,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border:
+                                      Border.all(color: Colors.amber.shade200),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.star,
+                                      size: 15,
+                                      color: Colors.amber.shade600,
+                                    ),
+                                    const SizedBox(width: 2),
+                                    Text(
+                                      ratingStats.averageRating
+                                          .toStringAsFixed(1),
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.amber.shade700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 3,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.grey.shade100,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Text(
+                                  'New',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey.shade600,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                          ],
                         ),
                         const SizedBox(height: 6),
                         Container(
@@ -597,12 +663,15 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                 color: Colors.blue.shade700,
                               ),
                               const SizedBox(width: 6),
-                              Text(
-                                doctor.specializationName ?? 'General',
-                                style: TextStyle(
-                                  fontSize: 13,
-                                  color: Colors.blue.shade700,
-                                  fontWeight: FontWeight.w600,
+                              Flexible(
+                                child: Text(
+                                  doctor.specializationName ?? 'General',
+                                  style: TextStyle(
+                                    fontSize: 13,
+                                    color: Colors.blue.shade700,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -633,45 +702,6 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                         ),
                       ],
                     ),
-                  ),
-                  // Rating - Now shows real data
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      if (ratingStats != null &&
-                          ratingStats.totalReviews > 0) ...[
-                        RatingWidget(
-                          rating: ratingStats.averageRating,
-                          size: 16,
-                          showRating: true,
-                          color: Colors.amber,
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          '(${ratingStats.totalReviews})',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade600,
-                          ),
-                        ),
-                      ] else ...[
-                        Text(
-                          'New Doctor',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: Colors.blue.shade600,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                        Text(
-                          'No reviews yet',
-                          style: TextStyle(
-                            fontSize: 10,
-                            color: Colors.grey.shade500,
-                          ),
-                        ),
-                      ],
-                    ],
                   ),
                 ],
               ),
@@ -717,7 +747,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
               ] else
                 const SizedBox(height: 8),
 
-              // Enhanced Action Buttons with Rating Info
+              // Action Buttons
               Row(
                 children: [
                   // View Profile Button
@@ -807,41 +837,14 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                   ),
                 ],
               ),
-
-              // Show rating summary if available
-              if (ratingStats != null && ratingStats.totalReviews > 0) ...[
-                const SizedBox(height: 12),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.amber.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.amber.shade200),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.star, size: 16, color: Colors.amber.shade600),
-                      const SizedBox(width: 6),
-                      Text(
-                        '${ratingStats.averageRating.toStringAsFixed(1)} rating from ${ratingStats.totalReviews} patients',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.amber.shade700,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
             ],
           ),
         ),
       ),
     );
   }
+
+
 
   IconData _getSpecializationIcon(String specialization) {
     switch (specialization.toLowerCase().trim()) {
