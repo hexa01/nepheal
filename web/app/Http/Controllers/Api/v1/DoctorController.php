@@ -133,14 +133,27 @@ class DoctorController extends BaseController
         }
 
         // General info update
-        $input = $request->only(['name', 'email', 'phone', 'address']);
+        $input = $request->only(['name', 'email', 'phone', 'address', 'gender']);
+
+        // Only update email if it's provided and different
+        if (!$request->filled('email') || $request->email === $user->email) {
+            unset($input['email']);
+        }
+
         $user->update($input);
 
-        // Admin can update specialization
+        // Update doctor-specific fields
+        $doctorInput = [];
+        if ($request->filled('bio')) {
+            $doctorInput['bio'] = $request->bio;
+        }
+
         if ($request->filled('specialization_id') && Auth::user()->role === 'admin') {
-            $doctor->update([
-                'specialization_id' => $request->input('specialization_id'),
-            ]);
+            $doctorInput['specialization_id'] = $request->input('specialization_id');
+        }
+
+        if (!empty($doctorInput)) {
+            $doctor->update($doctorInput);
         }
 
         $data = [
@@ -152,6 +165,8 @@ class DoctorController extends BaseController
                 'phone'          => $user->phone,
                 'address'        => $user->address,
                 'role'           => $user->role,
+                'gender'         => $user->gender,
+                'bio'            => $doctor->bio,
                 'specialization' => $doctor->specialization->name ?? 'General',
             ],
         ];
@@ -187,6 +202,8 @@ class DoctorController extends BaseController
                 'phone'          => $doctor->user->phone,
                 'address'        => $doctor->user->address,
                 'role'           => $doctor->user->role,
+                'gender'           => $doctor->user->gender,
+                'bio'            => $doctor->bio,
                 'specialization' => $doctor->specialization->name ?? 'General',
             ],
         ];

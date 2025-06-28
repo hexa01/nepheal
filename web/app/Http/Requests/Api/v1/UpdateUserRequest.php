@@ -5,6 +5,7 @@ namespace App\Http\Requests\Api\v1;
 use App\Models\User;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
 
 class UpdateUserRequest extends FormRequest
 {
@@ -24,15 +25,24 @@ class UpdateUserRequest extends FormRequest
      */
     public function rules()
     {
+        $userId = $this->route('id') ?? $this->route('user') ?? $this->route('patient') ?? $this->route('doctor');
+        
         $rules = [
             'name' => 'nullable|string|max:255',
-            'email' => ['nullable', 'string', 'email', 'max:255', 'unique:' . User::class],
+            'email' => [
+                'nullable', 
+                'string', 
+                'email', 
+                'max:255', 
+                Rule::unique('users')->ignore($userId) // ✅ FIX: Ignore current user's email
+            ],
             'phone' => 'nullable|string|max:30',
             'address' => 'nullable|string|max:255',
+            'gender' => 'nullable|string|in:male,female', // ✅ ADD: Gender validation
+            'bio' => 'nullable|string|max:500', // ✅ ADD: Bio validation for doctors
             'current_password' => 'nullable|string|min:8',
             'password' => 'nullable|string|min:8|confirmed',
         ];
-
 
         if ($this->filled('password') && Auth::user()->role !== 'admin') {
             $rules['password'] = 'required|string|min:8|confirmed';
@@ -59,7 +69,8 @@ class UpdateUserRequest extends FormRequest
             'specialization_id.required' => 'Specialization is required for doctors.',
             'specialization_id.exists' => 'The selected specialization is invalid.',
             'email.unique' => 'The email address is already taken by another user.',
+            'bio.max' => 'Bio must not exceed 500 characters.', // ✅ ADD: Bio error message
+            'gender.in' => 'Gender must be either male or female.', // ✅ ADD: Gender error message
         ];
     }
 }
-

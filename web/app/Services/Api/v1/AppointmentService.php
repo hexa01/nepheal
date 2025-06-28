@@ -22,13 +22,21 @@ class AppointmentService
 
     public function generateAvailableSlots($doctor, $appointment_date)
     {
+                $available_slots = [];
 
         $appointment_date = Carbon::parse($appointment_date);
         $appointment_day = $appointment_date->englishDayOfWeek;
         $schedule = $doctor->schedules->where('day', $appointment_day)->first();
+
+        $schedule_status = $schedule->status;
+        if (!$schedule || $schedule_status !== 'available') {
+            return [];
+        }
+
+
         $slot_count = $schedule->slot_count;
         $start_time = Carbon::parse($schedule->start_time);
-        $available_slots = [];
+
         for ($i = 0; $i < $slot_count; $i++) {
             $available_slots[] = $start_time->format('H:i');
             $start_time->addMinutes(30);
@@ -36,6 +44,7 @@ class AppointmentService
         $booked_slots = Appointment::where('doctor_id', $doctor->id)
         ->whereDate('appointment_date', $appointment_date)
         ->get()
+
         ->pluck('slot')
         ->map(fn($slot) => Carbon::parse($slot)->format('H:i'))
         ->toArray();

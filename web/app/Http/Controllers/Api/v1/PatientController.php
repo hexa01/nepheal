@@ -99,7 +99,13 @@ class PatientController extends BaseController
         }
 
         // Update other fields
-        $input = $request->only(['name', 'email', 'phone', 'address']);
+        $input = $request->only(['name', 'email', 'phone', 'address', 'gender']);
+
+        // Only update email if it's provided and different
+        if (!$request->filled('email') || $request->email === $user->email) {
+            unset($input['email']);
+        }
+
         $user->update($input);
 
         $data['patient'] = $this->userService->formatUser($user);

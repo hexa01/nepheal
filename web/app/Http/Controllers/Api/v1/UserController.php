@@ -216,8 +216,29 @@ class UserController extends BaseController
         ];
         return $this->successResponse('Password reset successsfully',$data);
 
-
-
     }
+
+    // Add this method to UserController.php
+public function changePassword(Request $request)
+{
+    $request->validate([
+        'current_password' => 'required|string',
+        'password' => 'required|string|min:8|confirmed',
+    ]);
+
+    $user = Auth::user();
+
+    // Verify current password
+    if (!Hash::check($request->current_password, $user->password)) {
+        return $this->errorResponse('The current password is incorrect.', 400);
+    }
+
+    // Update password
+    $user->update([
+        'password' => Hash::make($request->password),
+    ]);
+
+    return $this->successResponse('Password updated successfully.');
+}
 
 }
