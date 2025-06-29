@@ -534,11 +534,16 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
             children: [
               Row(
                 children: [
-                  // Enhanced Doctor Avatar with Profile Photo
+                  //TODO: Enhanced Doctor Avatar with Profile Photo
                   CompactProfileAvatar(
                     imageUrl: doctor.user?.profilePhotoUrl,
-                    initials: doctor.user?.initials ?? 
-                             doctor.name.split(' ').map((n) => n[0]).take(2).join().toUpperCase(),
+                    initials: doctor.user?.initials ??
+                        doctor.name
+                            .split(' ')
+                            .map((n) => n[0])
+                            .take(2)
+                            .join()
+                            .toUpperCase(),
                     size: 70,
                     backgroundColor: Colors.blue.shade100,
                     textColor: Colors.blue.shade700,

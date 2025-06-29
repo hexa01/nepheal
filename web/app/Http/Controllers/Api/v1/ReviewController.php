@@ -24,7 +24,7 @@ class ReviewController extends BaseController
         ]);
 
         $perPage = $request->get('per_page', 10);
-        
+
         $reviews = Review::with(['patient.user'])
             ->forDoctor($request->doctor_id)
             ->orderBy('created_at', 'desc')
@@ -37,6 +37,8 @@ class ReviewController extends BaseController
                 'comment' => $review->comment,
                 'created_at' => $review->created_at->format('Y-m-d H:i:s'),
                 'patient_name' => $review->patient->user->name ?? 'Anonymous',
+                'profile_photo_url' => $review->patient->user->profile_photo_url,
+                'profile_photo' => $review->patient->user->profile_photo,
                 'patient_initials' => $this->getPatientInitials($review->patient->user->name ?? 'A'),
             ];
         });
@@ -58,7 +60,7 @@ class ReviewController extends BaseController
     public function getDoctorStats($doctorId)
     {
         $doctor = Doctor::find($doctorId);
-        
+
         if (!$doctor) {
             return $this->errorResponse('Doctor not found', 404);
         }
@@ -66,7 +68,7 @@ class ReviewController extends BaseController
         $totalReviews = $doctor->reviews()->count();
         $averageRating = $doctor->reviews()->avg('rating') ?: 0;
         $ratingBreakdown = $doctor->getReviewsCountByRating();
-        
+
         // Fill missing ratings with 0
         for ($i = 1; $i <= 5; $i++) {
             if (!isset($ratingBreakdown[$i])) {
@@ -135,35 +137,37 @@ class ReviewController extends BaseController
     /**
      * Get patient's reviews.
      */
-public function getPatientReviews()
-{
-    $patient = Auth::user()->patient;
-    
-    if (!$patient) {
-        return $this->errorResponse('Patient profile not found', 404);
+    public function getPatientReviews()
+    {
+        $patient = Auth::user()->patient;
+
+        if (!$patient) {
+            return $this->errorResponse('Patient profile not found', 404);
+        }
+
+        $reviews = Review::with(['doctor.user', 'appointment'])
+            ->byPatient($patient->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        $formattedReviews = $reviews->map(function ($review) {
+            return [
+                'id' => $review->id,
+                'appointment_id' => $review->appointment_id, // ← THIS WAS MISSING!
+                'rating' => $review->rating,
+                'comment' => $review->comment,
+                'created_at' => $review->created_at->format('Y-m-d H:i:s'),
+                'doctor_name' => $review->doctor->user->name,
+                'profile_photo_url' => $review->doctor->user->profile_photo_url,
+                'profile_photo' => $review->doctor->user->profile_photo,
+                'appointment_date' => $review->appointment->appointment_date,
+            ];
+        });
+
+        return $this->successResponse('Patient reviews retrieved successfully', [
+            'reviews' => $formattedReviews
+        ]);
     }
-
-    $reviews = Review::with(['doctor.user', 'appointment'])
-        ->byPatient($patient->id)
-        ->orderBy('created_at', 'desc')
-        ->get();
-
-    $formattedReviews = $reviews->map(function ($review) {
-        return [
-            'id' => $review->id,
-            'appointment_id' => $review->appointment_id, // ← THIS WAS MISSING!
-            'rating' => $review->rating,
-            'comment' => $review->comment,
-            'created_at' => $review->created_at->format('Y-m-d H:i:s'),
-            'doctor_name' => $review->doctor->user->name,
-            'appointment_date' => $review->appointment->appointment_date,
-        ];
-    });
-
-    return $this->successResponse('Patient reviews retrieved successfully', [
-        'reviews' => $formattedReviews
-    ]);
-}
 
     /**
      * Get appointments that can be reviewed by the patient.
@@ -171,7 +175,7 @@ public function getPatientReviews()
     public function getReviewableAppointments()
     {
         $patient = Auth::user()->patient;
-        
+
         if (!$patient) {
             return $this->errorResponse('Patient profile not found', 404);
         }
@@ -189,6 +193,8 @@ public function getPatientReviews()
                 'doctor' => [
                     'id' => $appointment->doctor->id,
                     'name' => $appointment->doctor->user->name,
+                    'profile_photo_url' => $appointment->doctor->user->profile_photo_url,
+                    'profile_photo' => $appointment->doctor->user->profile_photo,
                     'specialization' => $appointment->doctor->specialization->name ?? 'General',
                 ],
             ];

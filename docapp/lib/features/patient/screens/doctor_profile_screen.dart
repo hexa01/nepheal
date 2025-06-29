@@ -8,13 +8,14 @@ import '../../../shared/widgets/rating_widget.dart';
 import '../../../shared/widgets/review_card_widget.dart';
 import 'book_appointment_screen.dart';
 import 'doctor_reviews_screen.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   final Doctor doctor;
   final DoctorRatingStats? existingRatingStats; // Accept cached rating data
 
   const DoctorProfileScreen({
-    super.key, 
+    super.key,
     required this.doctor,
     this.existingRatingStats, // Optional cached rating
   });
@@ -52,7 +53,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       // Create futures list - only load rating if not already provided
       List<Future> futures = [
         ApiService.getDoctorById(widget.doctor.id),
-        ApiService.getDoctorReviews(doctorId: widget.doctor.id, page: 1, perPage: 3),
+        ApiService.getDoctorReviews(
+            doctorId: widget.doctor.id, page: 1, perPage: 3),
       ];
 
       // Only load rating stats if we don't have them already
@@ -61,7 +63,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       }
 
       final results = await Future.wait(futures);
-      
+
       final doctorResponse = results[0];
       final reviewsResponse = results[1];
       final statsResponse = results.length > 2 ? results[2] : null;
@@ -74,7 +76,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             id: data['id'],
             userId: data['user']['id'] ?? 0,
             specializationId: data['specialization_id'],
-            hourlyRate: double.tryParse(data['hourly_rate']?.toString() ?? '0') ?? 0.0,
+            hourlyRate:
+                double.tryParse(data['hourly_rate']?.toString() ?? '0') ?? 0.0,
             bio: data['bio'],
             createdAt: DateTime.now(),
             updatedAt: DateTime.now(),
@@ -85,7 +88,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               role: data['user']['role'] ?? 'doctor',
               address: data['user']['address'],
               phone: data['user']['phone'],
-              gender: 'male',
+              gender: data['user']['gender'],
+              profilePhoto: data['user']['profile_photo'],
+              profilePhotoUrl: data['user']['profile_photo_url'],
               createdAt: DateTime.now(),
               updatedAt: DateTime.now(),
             ),
@@ -104,7 +109,9 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       }
 
       // Process rating stats only if not provided initially
-      if (widget.existingRatingStats == null && statsResponse != null && statsResponse['success']) {
+      if (widget.existingRatingStats == null &&
+          statsResponse != null &&
+          statsResponse['success']) {
         setState(() {
           _ratingStats = DoctorRatingStats.fromJson(statsResponse['data']);
         });
@@ -114,10 +121,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       if (reviewsResponse['success']) {
         final reviewsData = reviewsResponse['data']['reviews'] as List;
         setState(() {
-          _recentReviews = reviewsData.map((json) => Review.fromJson(json)).toList();
+          _recentReviews =
+              reviewsData.map((json) => Review.fromJson(json)).toList();
         });
       }
-
     } catch (e) {
       setState(() {
         _detailedDoctor = widget.doctor;
@@ -166,27 +173,18 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         // Doctor Avatar
                         Row(
                           children: [
-                            Container(
-                              width: 80,
-                              height: 80,
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(40),
-                                border:
-                                    Border.all(color: Colors.white, width: 3),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.2),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
-                              ),
-                              child: Icon(
-                                Icons.person,
-                                size: 40,
-                                color: Colors.blue.shade600,
-                              ),
+                            CompactProfileAvatar(
+                              imageUrl: doctor.user?.profilePhotoUrl,
+                              initials: doctor.user?.initials ??
+                                  doctor.name
+                                      .split(' ')
+                                      .map((n) => n[0])
+                                      .take(2)
+                                      .join()
+                                      .toUpperCase(),
+                              size: 70,
+                              backgroundColor: Colors.blue.shade100,
+                              textColor: Colors.blue.shade700,
                             ),
                             const SizedBox(width: 16),
                             Expanded(

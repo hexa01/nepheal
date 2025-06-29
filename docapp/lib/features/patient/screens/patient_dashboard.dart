@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:nepheal/features/patient/screens/payment_history_screen.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/specialization.dart';
 import '../../../core/storage/storage_service.dart';
@@ -28,6 +29,7 @@ class _PatientDashboardState extends State<PatientDashboard> {
         PatientHomeScreen(onNavigate: _changeTab),
         const DoctorsListScreen(),
         const MyAppointmentsScreen(),
+        // const PaymentHistoryScreen(),
         const MyReviewsScreen(),
         const PatientProfileScreen(),
       ];

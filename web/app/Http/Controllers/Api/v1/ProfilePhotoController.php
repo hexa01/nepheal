@@ -60,7 +60,6 @@ class ProfilePhotoController extends BaseController
             return $this->successResponse('Profile photo uploaded successfully', $data);
 
         } catch (\Exception $e) {
-            \Log::error('Profile photo upload error: ' . $e->getMessage());
             return $this->errorResponse('Failed to upload profile photo: ' . $e->getMessage(), 500);
         }
     }
@@ -86,7 +85,6 @@ class ProfilePhotoController extends BaseController
             return $this->errorResponse('No profile photo to delete', 404);
 
         } catch (\Exception $e) {
-            \Log::error('Profile photo delete error: ' . $e->getMessage());
             return $this->errorResponse('Failed to delete profile photo: ' . $e->getMessage(), 500);
         }
     }

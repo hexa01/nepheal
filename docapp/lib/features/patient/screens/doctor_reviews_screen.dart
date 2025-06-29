@@ -4,6 +4,7 @@ import '../../../shared/models/doctor.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/rating_widget.dart';
 import '../../../shared/widgets/review_card_widget.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 
 class DoctorReviewsScreen extends StatefulWidget {
   final Doctor doctor;
@@ -174,28 +175,19 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                                 // Doctor Info
                                 Row(
                                   children: [
-                                    Container(
-                                      width: 80,
-                                      height: 80,
-                                      decoration: BoxDecoration(
-                                        color: Colors.white,
-                                        borderRadius: BorderRadius.circular(40),
-                                        border: Border.all(
-                                            color: Colors.white, width: 3),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black
-                                                .withValues(alpha: 0.2),
-                                            blurRadius: 10,
-                                            offset: const Offset(0, 4),
-                                          ),
-                                        ],
-                                      ),
-                                      child: Icon(
-                                        Icons.person,
-                                        size: 40,
-                                        color: Colors.blue.shade600,
-                                      ),
+                                    CompactProfileAvatar(
+                                      imageUrl:
+                                          widget.doctor.user?.profilePhotoUrl,
+                                      initials: widget.doctor.user?.initials ??
+                                          widget.doctor.name
+                                              .split(' ')
+                                              .map((n) => n[0])
+                                              .take(2)
+                                              .join()
+                                              .toUpperCase(),
+                                      size: 70,
+                                      backgroundColor: Colors.blue.shade100,
+                                      textColor: Colors.blue.shade700,
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(

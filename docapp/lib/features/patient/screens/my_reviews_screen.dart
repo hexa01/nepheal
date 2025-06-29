@@ -4,6 +4,7 @@ import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/review_card_widget.dart';
 import '../../../shared/widgets/rating_widget.dart';
 import 'create_review_screen.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 
 class MyReviewsScreen extends StatefulWidget {
   const MyReviewsScreen({super.key});
@@ -340,23 +341,23 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
                     ],
                   ),
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: Colors.blue.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.blue.shade200),
-                  ),
-                  child: Text(
-                    '#${appointment.id}',
-                    style: TextStyle(
-                      fontSize: 10,
-                      color: Colors.blue.shade600,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
+                // Container(
+                //   padding:
+                //       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                //   decoration: BoxDecoration(
+                //     color: Colors.blue.shade50,
+                //     borderRadius: BorderRadius.circular(8),
+                //     border: Border.all(color: Colors.blue.shade200),
+                //   ),
+                //   child: Text(
+                //     '#${appointment.id}',
+                //     style: TextStyle(
+                //       fontSize: 10,
+                //       color: Colors.blue.shade600,
+                //       fontWeight: FontWeight.bold,
+                //     ),
+                //   ),
+                // ),
               ],
             ),
 
@@ -365,21 +366,17 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
             // Doctor Info
             Row(
               children: [
-                Container(
-                  width: 50,
-                  height: 50,
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Colors.blue.shade100, Colors.blue.shade200],
-                    ),
-                    borderRadius: BorderRadius.circular(25),
-                    border: Border.all(color: Colors.blue.shade300, width: 2),
-                  ),
-                  child: Icon(
-                    Icons.person,
-                    size: 24,
-                    color: Colors.blue.shade700,
-                  ),
+                CompactProfileAvatar(
+                  imageUrl: appointment.doctor.profilePhotoUrl,
+                  initials: appointment.doctor.name
+                      .split(' ')
+                      .map((n) => n[0])
+                      .take(2)
+                      .join()
+                      .toUpperCase(),
+                  size: 70,
+                  backgroundColor: Colors.blue.shade100,
+                  textColor: Colors.blue.shade700,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

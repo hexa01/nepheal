@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 
 class RescheduleAppointmentScreen extends StatefulWidget {
   final int appointmentId;
@@ -155,15 +156,17 @@ class _RescheduleAppointmentScreenState extends State<RescheduleAppointmentScree
             
             Row(
               children: [
-                CircleAvatar(
+                CompactProfileAvatar(
+                  imageUrl: null,
+                  initials: "Doctor red"
+                      .split(' ')
+                      .map((n) => n[0])
+                      .take(2)
+                      .join()
+                      .toUpperCase(),
+                  size: 70,
                   backgroundColor: Colors.blue.shade100,
-                  child: Text(
-                    widget.doctorName[0].toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
+                  textColor: Colors.blue.shade700,
                 ),
                 const SizedBox(width: 12),
                 Expanded(

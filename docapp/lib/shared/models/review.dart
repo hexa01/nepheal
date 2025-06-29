@@ -9,6 +9,8 @@ class Review {
   final DateTime updatedAt;
   final String? patientName;
   final String? patientInitials;
+  final String? profilePhoto;
+  final String? profilePhotoUrl;
   final String? doctorName;
   final DateTime? appointmentDate;
 
@@ -23,6 +25,8 @@ class Review {
     required this.updatedAt,
     this.patientName,
     this.patientInitials,
+    this.profilePhoto,
+    this.profilePhotoUrl,
     this.doctorName,
     this.appointmentDate,
   });
@@ -43,6 +47,8 @@ class Review {
           : DateTime.now(),
       patientName: json['patient_name'],
       patientInitials: json['patient_initials'],
+      profilePhoto: json['profile_photo'],
+      profilePhotoUrl: json['profile_photo_url'],
       doctorName: json['doctor_name'],
       appointmentDate: json['appointment_date'] != null
           ? DateTime.parse(json['appointment_date'])
@@ -62,6 +68,8 @@ class Review {
       'updated_at': updatedAt.toIso8601String(),
       'patient_name': patientName,
       'patient_initials': patientInitials,
+      'profile_photo': profilePhoto,
+      'profile_photo_url': profilePhotoUrl,
       'doctor_name': doctorName,
       'appointment_date': appointmentDate?.toIso8601String(),
     };
@@ -95,10 +103,14 @@ class DoctorInfo {
   final int id;
   final String name;
   final String specialization;
+  final String profilePhoto;
+  final String profilePhotoUrl;
 
   DoctorInfo({
     required this.id,
     required this.name,
+    required this.profilePhoto,
+    required this.profilePhotoUrl,
     required this.specialization,
   });
 
@@ -106,8 +118,20 @@ class DoctorInfo {
     return DoctorInfo(
       id: json['id'] ?? 0,
       name: json['name'] ?? 'Unknown Doctor',
+      profilePhoto: json['profile_photo'],
+      profilePhotoUrl: json['profile_photo_url'],
       specialization: json['specialization'] ?? 'General',
     );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      'specialization': specialization,
+      'profile_photo': profilePhoto, // Add this line
+      'profile_photo_url': profilePhotoUrl, // Add this line
+    };
   }
 }
 

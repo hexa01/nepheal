@@ -30,15 +30,15 @@ class AppointmentController extends BaseController
         
         if (Auth::user()->role === 'patient') {
             $patient = Auth::user()->patient;
-            $query = Appointment::with(['doctor.user', 'payment'])
+            $query = Appointment::with(['doctor.user', 'payment', 'review'])
                 ->where('patient_id', $patient->id);
         } elseif (Auth::user()->role === 'doctor') {
             $doctor = Auth::user()->doctor;
-            $query = Appointment::with(['patient.user', 'payment'])
+            $query = Appointment::with(['patient.user', 'payment', 'review'])
                 ->where('doctor_id', $doctor->id);
         } else {
             // Admin can see all
-            $query = Appointment::with(['doctor.user', 'patient.user', 'payment']);
+            $query = Appointment::with(['doctor.user', 'patient.user', 'payment', 'review']);
         }
 
         if ($status) {
@@ -66,7 +66,7 @@ class AppointmentController extends BaseController
         if ($status && isset($categorized[$status])) {
             return $this->successResponse("$status appointments retrieved successfully", $categorized[$status]);
         }
-
+        
         // Return all categorized
         $data = [
             'categorized' => $categorized,

@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../../../shared/models/review.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/rating_widget.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
 
 class CreateReviewScreen extends StatefulWidget {
   final ReviewableAppointment appointment;
@@ -41,7 +42,6 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
       body: SingleChildScrollView(
         child: Column(
           children: [
-            // Header with Doctor Info
             Container(
               width: double.infinity,
               padding: const EdgeInsets.all(24),
@@ -49,41 +49,26 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.blue.shade600,
-                    Colors.blue.shade400,
-                  ],
+                  colors: [Colors.blue.shade600, Colors.blue.shade400],
                 ),
               ),
               child: SafeArea(
                 top: false,
                 child: Column(
                   children: [
-                    // Doctor Avatar
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(40),
-                        border: Border.all(color: Colors.white, width: 3),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withValues(alpha: 0.2),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
-                          ),
-                        ],
-                      ),
-                      child: Icon(
-                        Icons.person,
-                        size: 40,
-                        color: Colors.blue.shade600,
-                      ),
+                    CompactProfileAvatar(
+                      imageUrl: widget.appointment.doctor.profilePhotoUrl,
+                      initials: widget.appointment.doctor.name
+                          .split(' ')
+                          .map((n) => n[0])
+                          .take(2)
+                          .join()
+                          .toUpperCase(),
+                      size: 70,
+                      backgroundColor: Colors.blue.shade100,
+                      textColor: Colors.blue.shade700,
                     ),
                     const SizedBox(height: 16),
-
-                    // Doctor Name & Specialization
                     Text(
                       widget.appointment.doctor.name,
                       style: const TextStyle(
@@ -96,15 +81,12 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                     const SizedBox(height: 4),
                     Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 6,
-                      ),
+                          horizontal: 16, vertical: 6),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.2),
+                        color: Colors.white.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(20),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.3),
-                        ),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.3)),
                       ),
                       child: Text(
                         widget.appointment.doctor.specialization,
@@ -116,65 +98,52 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
-                    // Appointment Details
                     Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.1),
+                        color: Colors.white.withOpacity(0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.2),
-                        ),
+                        border:
+                            Border.all(color: Colors.white.withOpacity(0.2)),
                       ),
                       child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.calendar_today,
-                                  size: 16,
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.calendar_today,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatDate(widget.appointment.appointmentDate),
+                                style: const TextStyle(
                                   color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _formatDate(
-                                      widget.appointment.appointmentDate),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
-                          Container(
-                            width: 1,
-                            height: 20,
-                            color: Colors.white.withValues(alpha: 0.3),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Icon(
-                                  Icons.access_time,
-                                  size: 16,
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.access_time,
+                                size: 16,
+                                color: Colors.white,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _formatTime(widget.appointment.slot),
+                                style: const TextStyle(
                                   color: Colors.white,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w500,
                                 ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  _formatTime(widget.appointment.slot),
-                                  style: const TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
@@ -183,8 +152,6 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                 ),
               ),
             ),
-
-            // Review Form
             Padding(
               padding: const EdgeInsets.all(24),
               child: Form(
@@ -192,14 +159,12 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Section Title
                     const Text(
                       'Share Your Experience',
                       style: TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -211,8 +176,6 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                       ),
                     ),
                     const SizedBox(height: 32),
-
-                    // Rating Section
                     Container(
                       width: double.infinity,
                       padding: const EdgeInsets.all(24),
@@ -237,8 +200,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                             onRatingChanged: (rating) {
                               setState(() {
                                 _rating = rating;
-                                _error =
-                                    null; // Clear error when rating is selected
+                                _error = null;
                               });
                             },
                             initialRating: _rating,
@@ -247,17 +209,13 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                         ],
                       ),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Comment Section
                     const Text(
                       'Write Your Review',
                       style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87),
                     ),
                     const SizedBox(height: 8),
                     Text(
@@ -269,7 +227,6 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                       ),
                     ),
                     const SizedBox(height: 16),
-
                     TextFormField(
                       controller: _commentController,
                       maxLines: 6,
@@ -300,11 +257,8 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                       ),
                       style: const TextStyle(fontSize: 16),
                     ),
-
                     const SizedBox(height: 24),
-
-                    // Error Message
-                    if (_error != null) ...[
+                    if (_error != null)
                       Container(
                         width: double.infinity,
                         padding: const EdgeInsets.all(16),
@@ -330,10 +284,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                           ],
                         ),
                       ),
-                      const SizedBox(height: 24),
-                    ],
-
-                    // Submit Button
+                    const SizedBox(height: 24),
                     SizedBox(
                       width: double.infinity,
                       height: 56,
@@ -345,7 +296,7 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                           backgroundColor: Colors.blue,
                           foregroundColor: Colors.white,
                           elevation: 4,
-                          shadowColor: Colors.blue.withValues(alpha: 0.3),
+                          shadowColor: Colors.blue.withOpacity(0.3),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                           ),
@@ -362,12 +313,12 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                               )
                             : Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
-                                children: [
-                                  const Icon(Icons.send, size: 20),
-                                  const SizedBox(width: 12),
+                                children: const [
+                                  Icon(Icons.send, size: 20),
+                                  SizedBox(width: 12),
                                   Text(
                                     'Submit Review',
-                                    style: const TextStyle(
+                                    style: TextStyle(
                                       fontSize: 18,
                                       fontWeight: FontWeight.bold,
                                     ),
@@ -376,19 +327,14 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                               ),
                       ),
                     ),
-
                     const SizedBox(height: 16),
-
-                    // Cancel Button
                     SizedBox(
                       width: double.infinity,
                       height: 48,
                       child: OutlinedButton(
                         onPressed: _isSubmitting
                             ? null
-                            : () {
-                                Navigator.of(context).pop();
-                              },
+                            : () => Navigator.of(context).pop(),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: Colors.grey.shade700,
                           side: BorderSide(color: Colors.grey.shade300),
@@ -405,7 +351,6 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
                         ),
                       ),
                     ),
-
                     const SizedBox(height: 24),
                   ],
                 ),
@@ -421,31 +366,25 @@ class _CreateReviewScreenState extends State<CreateReviewScreen> {
     return DateFormat('EEEE, MMM dd, yyyy').format(date);
   }
 
-String _formatTime(String time24) {
-  try {
-    // Handle both "HH:mm:ss" and "HH:mm" formats
-    String timeStr = time24.trim();
-    
-    // If the time includes seconds, remove them
-    if (timeStr.contains(':') && timeStr.split(':').length == 3) {
-      // Convert "14:00:00" to "14:00"
-      final parts = timeStr.split(':');
-      timeStr = '${parts[0]}:${parts[1]}';
+  String _formatTime(String time24) {
+    try {
+      String timeStr = time24.trim();
+      if (timeStr.contains(':') && timeStr.split(':').length == 3) {
+        final parts = timeStr.split(':');
+        timeStr = '${parts[0]}:${parts[1]}';
+      }
+      final time = DateFormat('HH:mm').parse(timeStr);
+      return DateFormat('h:mm a').format(time);
+    } catch (e) {
+      print('⚠️ Time parsing error for "$time24": $e');
+      return time24;
     }
-    
-    final time = DateFormat('HH:mm').parse(timeStr);
-    return DateFormat('h:mm a').format(time);
-  } catch (e) {
-    print('⚠️ Time parsing error for "$time24": $e');
-    return time24;
   }
-}
 
   Future<void> _submitReview() async {
     if (_rating == 0) {
-      setState(() {
-        _error = 'Please select a rating before submitting your review';
-      });
+      setState(() =>
+          _error = 'Please select a rating before submitting your review');
       return;
     }
 
@@ -465,49 +404,43 @@ String _formatTime(String time24) {
 
       if (response['success']) {
         if (mounted) {
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Row(
-                children: [
-                  const Icon(Icons.check_circle, color: Colors.white),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Text(
-                          'Review submitted successfully!',
-                          style: TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+          ScaffoldMessenger.of(context).showSnackBar(SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Text(
+                        'Review submitted successfully!',
+                        style: TextStyle(
+                            fontWeight: FontWeight.bold, fontSize: 16),
+                      ),
+                      Text(
+                        'Thank you for your feedback',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white.withOpacity(0.9),
                         ),
-                        Text(
-                          'Thank you for your feedback',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.white.withValues(alpha: 0.9),
-                          ),
-                        ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              duration: const Duration(seconds: 3),
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              margin: const EdgeInsets.all(16),
+                ),
+              ],
             ),
-          );
+            backgroundColor: Colors.green,
+            duration: const Duration(seconds: 3),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            margin: const EdgeInsets.all(16),
+          ));
 
-          // Pop back to previous screen
-          Navigator.of(context).pop(true); // Return true to indicate success
+          Navigator.of(context).pop(true);
         }
       } else {
         setState(() {

@@ -38,8 +38,9 @@ class ReviewCard extends StatelessWidget {
               children: [
                 // Patient/Doctor Avatar with Profile Photo Support
                 CompactProfileAvatar(
-                  imageUrl: null, // Review model doesn't include profile photo URL yet
-                  initials: review.patientInitials ?? _getInitials(review.patientName ?? 'U'),
+                  imageUrl: review.profilePhotoUrl,
+                  initials: review.patientInitials ??
+                      _getInitials(review.patientName ?? 'U'),
                   size: 40,
                   backgroundColor: Colors.blue.shade100,
                   textColor: Colors.blue.shade700,

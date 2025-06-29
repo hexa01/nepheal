@@ -12,6 +12,8 @@ class Appointment {
   final DateTime updatedAt;
   final Doctor? doctor;
   final Patient? patient;
+  final double amount;
+  final String paymentStatus;
 
   Appointment({
     required this.id,
@@ -24,6 +26,8 @@ class Appointment {
     required this.updatedAt,
     this.doctor,
     this.patient,
+    this.amount = 0.0,
+    this.paymentStatus = 'unpaid',
   });
 
   factory Appointment.fromJson(Map<String, dynamic> json) {
@@ -39,6 +43,12 @@ class Appointment {
       doctor: json['doctor'] != null ? Doctor.fromJson(json['doctor']) : null,
       patient:
           json['patient'] != null ? Patient.fromJson(json['patient']) : null,
+      amount: (json['amount'] != null)
+          ? (json['amount'] is int
+              ? (json['amount'] as int).toDouble()
+              : json['amount'] as double)
+          : 0.0,
+      paymentStatus: json['payment_status'] ?? 'unpaid',
     );
   }
 
@@ -54,6 +64,8 @@ class Appointment {
       'updated_at': updatedAt.toIso8601String(),
       'doctor': doctor?.toJson(),
       'patient': patient?.toJson(),
+      'amount': amount,
+      'payment_status': paymentStatus,
     };
   }
 }

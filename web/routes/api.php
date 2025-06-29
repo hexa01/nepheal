@@ -113,7 +113,7 @@ Route::prefix('v1')->group(function () {
             Route::apiResource('admins', AdminController::class)->only(['index', 'update'])->names('api.admins');
 
             // Admin can delete any review
-            Route::delete('/reviews/{reviewId}', [ReviewController::class, 'destroy'])->name('api.reviews.admin.delete');
+            // Route::delete('/reviews/{reviewId}', [ReviewController::class, 'destroy'])->name('api.reviews.admin.delete');
         });
 
         Route::middleware('role:admin,doctor')->group(function () {

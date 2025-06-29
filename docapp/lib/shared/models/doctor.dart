@@ -33,7 +33,8 @@ class Doctor {
         id: json['id'] ?? 0,
         userId: userData['id'] ?? 0, // Now properly extracted
         specializationId: json['specialization_id'],
-        hourlyRate: double.tryParse(json['hourly_rate']?.toString() ?? '0') ?? 0.0,
+        hourlyRate:
+            double.tryParse(json['hourly_rate']?.toString() ?? '0') ?? 0.0,
         bio: json['bio'],
         createdAt: DateTime.now(), // Placeholder
         updatedAt: DateTime.now(), // Placeholder
@@ -45,6 +46,8 @@ class Doctor {
           address: userData['address'], // Can be null
           phone: userData['phone'], // Can be null
           gender: 'male', // Placeholder
+          profilePhoto: userData['profile_photo'],
+          profilePhotoUrl: userData['profile_photo_url'],
           createdAt: DateTime.now(),
           updatedAt: DateTime.now(),
         ),

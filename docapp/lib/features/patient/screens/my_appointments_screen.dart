@@ -6,10 +6,14 @@ import 'payment_screen.dart';
 import 'reschedule_appointment_screen.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/payment.dart';
+import '../../../shared/models/review.dart';
+import '../../../shared/widgets/profile_avatar_widget.dart';
+import 'create_review_screen.dart';
+import 'my_reviews_screen.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
   final int initialTabIndex;
-  
+
   const MyAppointmentsScreen({super.key, this.initialTabIndex = 0});
 
   @override
@@ -35,7 +39,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(
-      length: 4, 
+      length: 4,
       vsync: this,
       initialIndex: widget.initialTabIndex,
     );
@@ -56,11 +60,12 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
 
     try {
       final response = await ApiService.getAppointmentsByStatus();
-      
+
       if (response['success']) {
         final data = response['data'];
         setState(() {
-          _categorizedAppointments = ApiService.parseCategorizedAppointments(response);
+          _categorizedAppointments =
+              ApiService.parseCategorizedAppointments(response);
           _stats = data['summary'] ?? {};
         });
       } else {
@@ -95,28 +100,32 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
             Tab(
               text: 'Pending',
               icon: Badge(
-                label: Text('${_categorizedAppointments['pending']?.length ?? 0}'),
+                label:
+                    Text('${_categorizedAppointments['pending']?.length ?? 0}'),
                 child: const Icon(Icons.schedule),
               ),
             ),
             Tab(
               text: 'Booked',
               icon: Badge(
-                label: Text('${_categorizedAppointments['booked']?.length ?? 0}'),
+                label:
+                    Text('${_categorizedAppointments['booked']?.length ?? 0}'),
                 child: const Icon(Icons.check_circle),
               ),
             ),
             Tab(
               text: 'Completed',
               icon: Badge(
-                label: Text('${_categorizedAppointments['completed']?.length ?? 0}'),
+                label: Text(
+                    '${_categorizedAppointments['completed']?.length ?? 0}'),
                 child: const Icon(Icons.check_circle_outline),
               ),
             ),
             Tab(
               text: 'Missed',
               icon: Badge(
-                label: Text('${_categorizedAppointments['missed']?.length ?? 0}'),
+                label:
+                    Text('${_categorizedAppointments['missed']?.length ?? 0}'),
                 child: const Icon(Icons.cancel),
               ),
             ),
@@ -184,7 +193,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
   Widget _buildEmptyState(String category) {
     String message;
     IconData icon;
-    
+
     switch (category) {
       case 'pending':
         message = 'No pending appointments';
@@ -226,13 +235,17 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     );
   }
 
-  Widget _buildAppointmentCard(Map<String, dynamic> appointment, String category) {
+  Widget _buildAppointmentCard(
+      Map<String, dynamic> appointment, String category) {
     final statusConfig = _getStatusConfig(category);
     final canModify = category == 'pending';
-    // Fixed the null error - proper null checking for payment_status
-    final canPayNow = category == 'pending' && 
-                     appointment['payment_status'] != null && 
-                     appointment['payment_status'] == 'unpaid';
+    final canPayNow = category == 'pending' &&
+        appointment['payment_status'] != null &&
+        appointment['payment_status'] == 'unpaid';
+
+    // Check if review has been written
+    final hasReview = appointment['has_review'] == true;
+    final canWriteReview = category == 'completed' && !hasReview;
 
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
@@ -285,19 +298,20 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
                   ],
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                   decoration: BoxDecoration(
                     color: Colors.grey.shade100,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Text(
-                    '#${appointment['id']?.toString() ?? 'N/A'}',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
+                  // child: Text(
+                  //   '#${appointment['id']?.toString() ?? 'N/A'}',
+                  //   style: TextStyle(
+                  //     fontSize: 12,
+                  //     fontWeight: FontWeight.bold,
+                  //     color: Colors.grey.shade600,
+                  //   ),
+                  // ),
                 ),
               ],
             ),
@@ -307,14 +321,17 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
             // Doctor and appointment details
             Row(
               children: [
-                CircleAvatar(
-                  radius: 25,
+                CompactProfileAvatar(
+                  imageUrl: appointment['profile_photo_url'],
+                  initials: appointment['doctor_name']
+                      .split(' ')
+                      .map((n) => n[0])
+                      .take(2)
+                      .join()
+                      .toUpperCase(),
+                  size: 70,
                   backgroundColor: Colors.blue.shade100,
-                  child: Icon(
-                    Icons.person,
-                    size: 24,
-                    color: Colors.blue.shade600,
-                  ),
+                  textColor: Colors.blue.shade700,
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -322,7 +339,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        appointment['doctor_name']?.toString() ?? 'Unknown Doctor',
+                        appointment['doctor_name']?.toString() ??
+                            'Unknown Doctor',
                         style: const TextStyle(
                           fontWeight: FontWeight.w600,
                           fontSize: 16,
@@ -370,7 +388,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
                   ),
                 ),
                 Text(
-                  'Rs. ${appointment['amount']?.toString() ?? '0'}',
+                  'Rs. ${appointment['amount']?.toString() ?? '300'}',
                   style: const TextStyle(
                     fontWeight: FontWeight.bold,
                     fontSize: 16,
@@ -392,7 +410,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.payment, color: Colors.orange.shade700, size: 20),
+                    Icon(Icons.payment,
+                        color: Colors.orange.shade700, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
@@ -470,7 +489,7 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
             ],
 
             // Add review button for completed appointments
-            if (category == 'completed') ...[
+            if (canWriteReview) ...[
               const SizedBox(height: 8),
               SizedBox(
                 width: double.infinity,
@@ -486,6 +505,37 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
                     ),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
+                ),
+              ),
+            ],
+
+            // Show review completed message
+            if (category == 'completed' && hasReview) ...[
+              const SizedBox(height: 8),
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.green.shade200),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.check_circle,
+                        color: Colors.green.shade700, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        'Thank you for your review!',
+                        style: TextStyle(
+                          color: Colors.green.shade700,
+                          fontWeight: FontWeight.w500,
+                          fontSize: 13,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -566,7 +616,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
         builder: (context) => PaymentScreen(
           appointmentId: appointment['id'] ?? 0,
           amount: appointment['amount']?.toDouble() ?? 0.0,
-          doctorName: appointment['doctor_name']?.toString() ?? 'Unknown Doctor',
+          doctorName:
+              appointment['doctor_name']?.toString() ?? 'Unknown Doctor',
           appointmentDate: appointment['date']?.toString() ?? '',
           appointmentSlot: appointment['slot']?.toString() ?? '',
         ),
@@ -597,7 +648,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
           currentDate: appointment['date']?.toString() ?? '',
           currentSlot: appointment['slot']?.toString() ?? '',
           doctorId: appointment['doctor_id'] ?? 0,
-          doctorName: appointment['doctor_name']?.toString() ?? 'Unknown Doctor',
+          doctorName:
+              appointment['doctor_name']?.toString() ?? 'Unknown Doctor',
         ),
       ),
     );
@@ -621,7 +673,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Cancel Appointment'),
-        content: const Text('Are you sure you want to cancel this appointment?'),
+        content:
+            const Text('Are you sure you want to cancel this appointment?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(context).pop(false),
@@ -638,8 +691,9 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
 
     if (confirmed == true) {
       try {
-        final response = await ApiService.cancelAppointment(appointment['id'] ?? 0);
-        
+        final response =
+            await ApiService.cancelAppointment(appointment['id'] ?? 0);
+
         if (response['success']) {
           await _loadAppointments();
           if (mounted) {
@@ -655,7 +709,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
-                content: Text(response['message'] ?? 'Failed to cancel appointment'),
+                content:
+                    Text(response['message'] ?? 'Failed to cancel appointment'),
                 backgroundColor: Colors.red,
                 duration: const Duration(seconds: 3),
               ),
@@ -666,7 +721,8 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
+              content:
+                  Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
               backgroundColor: Colors.red,
               duration: const Duration(seconds: 3),
             ),
@@ -677,14 +733,57 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
   }
 
   Future<void> _createReview(Map<String, dynamic> appointment) async {
-    // TODO: Navigate to CreateReviewScreen
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Review feature coming soon!'),
-        backgroundColor: Colors.blue,
-        duration: Duration(seconds: 2),
-      ),
-    );
+    try {
+      // Convert the appointment data to ReviewableAppointment format
+      final reviewableAppointment = ReviewableAppointment(
+        id: appointment['id'] ?? 0,
+        appointmentDate: DateTime.parse(appointment['date']?.toString() ??
+            DateTime.now().toIso8601String()),
+        slot: appointment['slot']?.toString() ?? '',
+        doctor: DoctorInfo(
+          id: appointment['doctor_id'] ?? 0,
+          name: appointment['doctor_name']?.toString() ?? 'Unknown Doctor',
+          specialization: appointment['specialization']?.toString() ??
+              'General', // Add specialization if available
+          profilePhoto: appointment['profile_photo']!
+              .toString(), // Add specialization if available
+          profilePhotoUrl: appointment['profile_photo_url']!
+              .toString(), // Add profile photo if available
+        ),
+      );
+
+      final result = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) => CreateReviewScreen(
+            appointment: reviewableAppointment,
+          ),
+        ),
+      );
+
+      // Refresh appointments if review was successfully created
+      if (result == true) {
+        await _loadAppointments();
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Review submitted successfully!'),
+              backgroundColor: Colors.green,
+              duration: Duration(seconds: 3),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error opening review screen: ${e.toString()}'),
+            backgroundColor: Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
+      }
+    }
   }
 }
 
