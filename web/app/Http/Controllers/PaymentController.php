@@ -10,7 +10,7 @@ class PaymentController extends Controller
 {
     public function esewaPay(Payment $payment)
     {
-        $transaction_id = 'TXN-' . uniqid();
+        $transaction_id = 'apt_' . $payment->appointment->id . '_' . time();
         $payment->update(['pid' => $transaction_id]);
         $esewa = new Esewa();
         $esewa->config(

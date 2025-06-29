@@ -81,10 +81,12 @@ class PaymentPage extends Page
                 "source" => $request->stripeToken,
                 "description" => $text,
             ]);
+            $pid = 'apt_' . $appointment->id . '_' . time();
             $payment->update([
                 'status' => 'paid',
                 'payment_method' => 'stripe',
-                'pid' => 'TXN-' . uniqid(),
+                'pid' => $pid,
+                
             ]);
 
             $appointment =  $payment->appointment;
