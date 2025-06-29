@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<network-security-config>
+    <domain-config cleartextTrafficPermitted="true">
+        <!-- Allow cleartext traffic for eSewa (UAT and Production) -->
+        <domain includeSubdomains="true">uat.esewa.com.np</domain>
+        <domain includeSubdomains="true">esewa.com.np</domain>
+        <domain includeSubdomains="true">www.esewa.com.np</domain>
+        <domain includeSubdomains="true">rc-epay.esewa.com.np</domain>
+        
+        <!-- Allow cleartext traffic for your Laravel backend -->
+        <domain includeSubdomains="true">192.168.1.67</domain>
+        <domain includeSubdomains="true">localhost</domain>
+        <domain includeSubdomains="true">10.0.2.2</domain>
+        <domain includeSubdomains="true">127.0.0.1</domain>
+    </domain-config>
+    
+    <!-- Base config to allow HTTPS with custom certificates -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system"/>
+        </trust-anchors>
+    </base-config>
+</network-security-config>

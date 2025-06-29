@@ -11,8 +11,6 @@ use App\Http\Controllers\Api\v1\SpecializationController;
 use App\Http\Controllers\Api\v1\ReviewController;
 use App\Http\Controllers\Api\v1\UserAuthController;
 use App\Http\Controllers\Api\v1\UserController;
-use App\Http\Controllers\Api\v1\PaymentController;
-use App\Http\Middleware\RoleMiddleware;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -30,22 +28,6 @@ Route::prefix('v1')->group(function () {
     Route::post('/login', [UserAuthController::class, 'login'])->name('api.login');
     Route::post('/register', [UserAuthController::class, 'register'])->name('api.register');
 
-
-    // eSewa success callback
-    Route::get('/payment/success', function (Request $request) {
-        // Redirect to Flutter app with success data
-        $params = http_build_query($request->all());
-        return redirect("doctorapp://payment/success?{$params}");
-    })->name('api.payment.success');
-
-    // eSewa failure callback  
-    Route::get('/payment/failure', function (Request $request) {
-        // Redirect to Flutter app with failure data
-        $params = http_build_query($request->all());
-        return redirect("doctorapp://payment/failure?{$params}");
-    })->name('api.payment.failure');
-
-    
 
     Route::group(['middleware' => "auth:sanctum"], function () {
         Route::post('/logout', [UserAuthController::class, 'logout']);
@@ -67,15 +49,6 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [ReviewController::class, 'index'])->name('api.reviews.index'); // Get reviews for a doctor
             Route::get('/doctor/{doctorId}/stats', [ReviewController::class, 'getDoctorStats'])->name('api.reviews.doctor.stats'); // Get doctor rating stats
         });
-
-        // NEW PAYMENT ROUTES
-        Route::get('/payments', [PaymentController::class, 'index']);
-        Route::get('/payments/{id}', [PaymentController::class, 'show']);
-        Route::post('/appointments/{appointmentId}/payment/initiate', [PaymentController::class, 'initiatePayment']);
-        Route::post('/payment/verify', [PaymentController::class, 'verifyPayment']);
-        Route::post('/payment/failure', [PaymentController::class, 'paymentFailure']);
-        Route::post('/payments/{paymentId}/retry', [PaymentController::class, 'retryPayment']);
-
 
         Route::middleware('role:patient')->group(function () {
             Route::get('/patient-view', [PatientController::class, 'view'])->name('api.patients.view');

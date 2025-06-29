@@ -3,7 +3,7 @@ class Payment {
   final int appointmentId;
   final String? pid;
   final double amount;
-  final String status; // 'unpaid', 'paid', 'failed'
+  final String status; // 'unpaid', 'paid', if failed then status is unpaid
   final String? paymentMethod;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -27,11 +27,11 @@ class Payment {
       amount: (json['amount'] as num).toDouble(),
       status: json['status'],
       paymentMethod: json['payment_method'],
-      createdAt: json['created_at'] != null 
-          ? DateTime.parse(json['created_at']) 
+      createdAt: json['created_at'] != null
+          ? DateTime.parse(json['created_at'])
           : null,
-      updatedAt: json['updated_at'] != null 
-          ? DateTime.parse(json['updated_at']) 
+      updatedAt: json['updated_at'] != null
+          ? DateTime.parse(json['updated_at'])
           : null,
     );
   }
@@ -52,7 +52,7 @@ class Payment {
   // Helper methods
   bool get isPaid => status == 'paid';
   bool get isPending => status == 'unpaid';
-  bool get isFailed => status == 'failed';
+  bool get isFailed => status == 'unpaid'; //can't change migration and model in backend now, can remove this if not needed
 
   // Copy with method
   Payment copyWith({
