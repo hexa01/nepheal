@@ -4,6 +4,7 @@ use App\Http\Controllers\Api\v1\DoctorController;
 use App\Http\Controllers\Api\v1\AdminController;
 use App\Http\Controllers\Api\v1\AppointmentController;
 use App\Http\Controllers\Api\v1\PatientController;
+use App\Http\Controllers\Api\v1\PaymentController;
 use App\Http\Controllers\Api\v1\ProfilePhotoController;
 use App\Http\Controllers\Api\v1\ScheduleController;
 use App\Http\Controllers\Api\v1\SlotController;
@@ -29,6 +30,22 @@ Route::prefix('v1')->group(function () {
     Route::post('/register', [UserAuthController::class, 'register'])->name('api.register');
 
 
+    // eSewa Payment Callbacks (No auth required)
+    Route::get('/esewa/success', [PaymentController::class, 'esewaSuccess'])->name('api.v1.esewa.success');
+    Route::get('/esewa/failure', [PaymentController::class, 'esewaFailure'])->name('api.v1.esewa.failure');
+
+    // Public payment success/failure redirects for Flutter deep linking
+    Route::get('/payment/success', function (Request $request) {
+        $params = http_build_query($request->all());
+        return redirect("doctorapp://payment/success?{$params}");
+    })->name('api.payment.success');
+
+    Route::get('/payment/failure', function (Request $request) {
+        $params = http_build_query($request->all());
+        return redirect("doctorapp://payment/failure?{$params}");
+    })->name('api.payment.failure');
+
+
     Route::group(['middleware' => "auth:sanctum"], function () {
         Route::post('/logout', [UserAuthController::class, 'logout']);
         Route::get('/specializations', [SpecializationController::class, 'index'])->name('api.specializations.index');
@@ -48,6 +65,20 @@ Route::prefix('v1')->group(function () {
         Route::prefix('reviews')->group(function () {
             Route::get('/', [ReviewController::class, 'index'])->name('api.reviews.index'); // Get reviews for a doctor
             Route::get('/doctor/{doctorId}/stats', [ReviewController::class, 'getDoctorStats'])->name('api.reviews.doctor.stats'); // Get doctor rating stats
+        });
+
+        // Payment Routes
+        Route::prefix('payments')->group(function () {
+            Route::get('/', [PaymentController::class, 'index'])->name('api.payments.index');
+            Route::get('/{id}', [PaymentController::class, 'show'])->name('api.payments.show');
+
+            // eSewa specific routes
+            Route::post('/esewa/initiate', [PaymentController::class, 'esewaInitiate'])->name('api.payments.esewa.initiate');
+        });
+
+        // Appointment Payment Routes
+        Route::prefix('appointments/{appointmentId}')->group(function () {
+            Route::post('/payment/initiate', [PaymentController::class, 'initiatePayment'])->name('api.appointments.payment.initiate');
         });
 
         Route::middleware('role:patient')->group(function () {

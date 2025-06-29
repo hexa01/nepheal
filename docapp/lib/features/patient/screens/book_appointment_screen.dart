@@ -1,15 +1,16 @@
+// Fixed book_appointment_screen.dart
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
-import '../../../shared/models/doctor.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/models/doctor.dart';
+import 'payment_screen.dart';
+import 'my_appointments_screen.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
   final Doctor doctor;
 
-  const BookAppointmentScreen({
-    super.key,
-    required this.doctor,
-  });
+  const BookAppointmentScreen({super.key, required this.doctor});
 
   @override
   State<BookAppointmentScreen> createState() => _BookAppointmentScreenState();
@@ -28,7 +29,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Book Appointment'),
-        backgroundColor: Colors.blue,
+        backgroundColor: Colors.blue.shade600,
         foregroundColor: Colors.white,
       ),
       body: SingleChildScrollView(
@@ -36,243 +37,58 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Doctor Info Card
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.blue.shade100,
-                      child: Icon(
-                        Icons.person,
-                        size: 32,
-                        color: Colors.blue.shade600,
-                      ),
-                    ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.doctor.name,
-                            style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.blue.shade200),
-                            ),
-                            child: Text(
-                              widget.doctor.specializationName,
-                              style: TextStyle(
-                                fontSize: 12,
-                                color: Colors.blue.shade600,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
+            // Doctor info card
+            _buildDoctorCard(),
             const SizedBox(height: 24),
 
-            // Date Selection
-            const Text(
-              'Select Date',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 12),
+            // Date selection
+            _buildDateSelection(),
+            const SizedBox(height: 24),
 
-            InkWell(
-              onTap: _selectDate,
-              child: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey.shade300),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.calendar_today, color: Colors.blue.shade600),
-                    const SizedBox(width: 12),
-                    Text(
-                      _selectedDate != null
-                          ? DateFormat('EEEE, MMM dd, yyyy')
-                              .format(_selectedDate!)
-                          : 'Choose appointment date',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: _selectedDate != null
-                            ? Colors.black
-                            : Colors.grey.shade600,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
+            // Time slots
             if (_selectedDate != null) ...[
+              _buildTimeSlotSelection(),
               const SizedBox(height: 24),
-
-              // Time Slots
-              const Text(
-                'Available Time Slots',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 12),
-
-              if (_isLoadingSlots)
-                const Center(
-                  child: Padding(
-                    padding: EdgeInsets.all(32),
-                    child: CircularProgressIndicator(),
-                  ),
-                )
-              else if (_availableSlots.isEmpty)
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(24),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.orange.shade200),
-                  ),
-                  child: Column(
-                    children: [
-                      Icon(Icons.event_busy,
-                          size: 48, color: Colors.orange.shade600),
-                      const SizedBox(height: 8),
-                      Text(
-                        'No available slots',
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                          color: Colors.orange.shade600,
-                        ),
-                      ),
-                      Text(
-                        'Please choose a different date',
-                        style: TextStyle(color: Colors.orange.shade600),
-                        textAlign: TextAlign.center,
-                      ),
-                    ],
-                  ),
-                )
-              else
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: _availableSlots.map((slot) {
-                    final isSelected = _selectedSlot == slot;
-                    return InkWell(
-                      onTap: () {
-                        setState(() {
-                          _selectedSlot = slot;
-                        });
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        decoration: BoxDecoration(
-                          color: isSelected ? Colors.blue : Colors.blue.shade50,
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(
-                            color:
-                                isSelected ? Colors.blue : Colors.blue.shade200,
-                          ),
-                        ),
-                        child: Text(
-                          _formatTime(slot),
-                          style: TextStyle(
-                            color: isSelected
-                                ? Colors.white
-                                : Colors.blue.shade600,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                ),
             ],
 
-            const SizedBox(height: 32),
-
-            // Error Message
+            // Error message
             if (_error != null) ...[
               Container(
-                width: double.infinity,
                 padding: const EdgeInsets.all(12),
-                margin: const EdgeInsets.only(bottom: 16),
                 decoration: BoxDecoration(
                   color: Colors.red.shade50,
-                  border: Border.all(color: Colors.red.shade200),
                   borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error, color: Colors.red.shade600),
+                    Icon(Icons.error, color: Colors.red.shade700),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _error!,
-                        style: TextStyle(color: Colors.red.shade600),
+                        style: TextStyle(color: Colors.red.shade700),
                       ),
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: () {
-                        setState(() {
-                          _error = null;
-                        });
-                      },
-                      iconSize: 16,
                     ),
                   ],
                 ),
               ),
+              const SizedBox(height: 24),
             ],
 
-            // Book Button
+            // Book appointment button
             SizedBox(
               width: double.infinity,
-              height: 48,
               child: ElevatedButton(
-                onPressed: (_selectedDate != null &&
+                onPressed: _selectedDate != null &&
                         _selectedSlot != null &&
-                        !_isBooking)
+                        !_isBooking
                     ? _bookAppointment
                     : null,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue,
+                  backgroundColor: Colors.blue.shade600,
                   foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(8),
                   ),
@@ -288,13 +104,112 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       )
                     : const Text(
                         'Book Appointment',
-                        style: TextStyle(fontSize: 16),
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
                       ),
               ),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildDoctorCard() {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 30,
+              backgroundColor: Colors.blue.shade100,
+              child: Icon(
+                Icons.person,
+                size: 30,
+                color: Colors.blue.shade600,
+              ),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    widget.doctor.name,
+                    style: const TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    widget.doctor.specializationName,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.grey.shade600,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Rs. ${widget.doctor.hourlyRate.toStringAsFixed(0)}/session',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.green.shade600,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Select Date',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        InkWell(
+          onTap: _selectDate,
+          child: Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.grey.shade300),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.calendar_today, color: Colors.blue.shade600),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _selectedDate != null
+                        ? _formatDate(_selectedDate!)
+                        : 'Select appointment date',
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: _selectedDate != null
+                          ? Colors.black87
+                          : Colors.grey.shade600,
+                    ),
+                  ),
+                ),
+                Icon(Icons.arrow_drop_down, color: Colors.grey.shade600),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 
@@ -311,10 +226,78 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         _selectedDate = picked;
         _selectedSlot = null;
         _availableSlots = [];
-        _error = null;
       });
       await _loadAvailableSlots();
     }
+  }
+
+  Widget _buildTimeSlotSelection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Select Time Slot',
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        const SizedBox(height: 12),
+        if (_isLoadingSlots)
+          const Center(child: CircularProgressIndicator())
+        else if (_availableSlots.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.info, color: Colors.orange.shade700),
+                const SizedBox(width: 8),
+                const Expanded(
+                  child: Text(
+                    'No available slots for this date',
+                    style: TextStyle(fontWeight: FontWeight.w500),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          Wrap(
+            spacing: 8,
+            runSpacing: 8,
+            children: _availableSlots.map((slot) {
+              final isSelected = _selectedSlot == slot;
+              return InkWell(
+                onTap: () => setState(() => _selectedSlot = slot),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  decoration: BoxDecoration(
+                    color: isSelected
+                        ? Colors.blue.shade600
+                        : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: isSelected
+                          ? Colors.blue.shade600
+                          : Colors.grey.shade300,
+                    ),
+                  ),
+                  child: Text(
+                    _formatTime(slot),
+                    style: TextStyle(
+                      color: isSelected ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ),
+              );
+            }).toList(),
+          ),
+      ],
+    );
   }
 
   Future<void> _loadAvailableSlots() async {
@@ -326,25 +309,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     });
 
     try {
-      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
-
       final response = await ApiService.getAvailableSlots(
         doctorId: widget.doctor.id,
-        appointmentDate: dateStr,
+        appointmentDate: DateFormat('yyyy-MM-dd').format(_selectedDate!),
       );
 
       if (response['success']) {
-        final data = response['data'];
-        List<String> slots = [];
-
-        if (data is List) {
-          slots = data.map((item) => item.toString()).toList();
-        } else if (data is Map) {
-          slots = data.values.map((item) => item.toString()).toList();
-        }
-
         setState(() {
-          _availableSlots = slots;
+          _availableSlots = List<String>.from(response['data']);
         });
       } else {
         setState(() {
@@ -380,19 +352,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       );
 
       if (response['success']) {
-        if (mounted) {
-          // Show success message
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text(
-                  'Appointment booked successfully! Status: Pending (awaiting payment)'),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
+        final appointmentData = response['data']['appointment'];
+        final paymentData = response['data']['payment'];
 
-          // Go back to doctors list
-          Navigator.of(context).pop();
+        if (mounted) {
+          // Show booking success and payment options
+          await _showBookingSuccessDialog(appointmentData, paymentData);
         }
       } else {
         setState(() {
@@ -410,23 +375,180 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
   }
 
-String _formatTime(String time24) {
-  try {
-    // Handle both "HH:mm:ss" and "HH:mm" formats
-    String timeStr = time24.trim();
-    
-    // If the time includes seconds, remove them
-    if (timeStr.contains(':') && timeStr.split(':').length == 3) {
-      // Convert "14:00:00" to "14:00"
-      final parts = timeStr.split(':');
-      timeStr = '${parts[0]}:${parts[1]}';
+  Future<void> _showBookingSuccessDialog(
+      Map<String, dynamic> appointment, Map<String, dynamic> payment) async {
+    final bool? wantsToPay = await showDialog<bool>(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
+            const SizedBox(width: 8),
+            const Text('Appointment Booked!'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your appointment has been successfully booked.',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.blue.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.blue.shade200),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Appointment Details:',
+                    style: TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blue.shade700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text('Date: ${_formatDate(_selectedDate!)}'),
+                  Text('Time: ${_formatTime(_selectedSlot!)}'),
+                  Text('Amount: Rs. ${payment['amount'].toString()}'),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.orange.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.orange.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info, color: Colors.orange.shade700, size: 20),
+                  const SizedBox(width: 8),
+                  const Expanded(
+                    child: Text(
+                      'Status: Pending (Payment required to confirm)',
+                      style: TextStyle(fontWeight: FontWeight.w500),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Would you like to complete the payment now to confirm your appointment?',
+              style: TextStyle(fontSize: 14),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('Pay Later'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+            ),
+            child: const Text('Pay Now'),
+          ),
+        ],
+      ),
+    );
+
+    if (wantsToPay == true && mounted) {
+      // Navigate to payment screen
+      final paymentResult = await Navigator.of(context).push<bool>(
+        MaterialPageRoute(
+          builder: (context) => PaymentScreen(
+            appointmentId: appointment['id'] as int,
+            amount: (payment['amount'] as num).toDouble(),
+            doctorName: widget.doctor.name,
+            appointmentDate: appointment['date'].toString(),
+            appointmentSlot: appointment['slot'].toString(),
+          ),
+        ),
+      );
+
+      if (paymentResult == true && mounted) {
+        // Payment successful - Navigate to My Appointments (Booked section)
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Payment completed! Your appointment is confirmed.'),
+            backgroundColor: Colors.green,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        
+        // Navigate to MyAppointments screen and switch to booked tab
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const MyAppointmentsScreen(initialTabIndex: 1), // 1 = booked tab
+          ),
+        );
+      } else if (mounted) {
+        // Payment cancelled or failed, but appointment still exists
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text(
+                'Appointment booked. You can pay later from My Appointments.'),
+            backgroundColor: Colors.blue,
+            duration: Duration(seconds: 3),
+          ),
+        );
+        
+        // Navigate to MyAppointments screen and switch to pending tab
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(
+            builder: (context) => const MyAppointmentsScreen(initialTabIndex: 0), // 0 = pending tab
+          ),
+        );
+      }
+    } else if (mounted) {
+      // User chose to pay later
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Appointment booked! Complete payment to confirm.'),
+          backgroundColor: Colors.orange,
+          duration: Duration(seconds: 3),
+        ),
+      );
+      
+      // Navigate to MyAppointments screen and switch to pending tab
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (context) => const MyAppointmentsScreen(initialTabIndex: 0), // 0 = pending tab
+        ),
+      );
     }
-    
-    final time = DateFormat('HH:mm').parse(timeStr);
-    return DateFormat('h:mm a').format(time);
-  } catch (e) {
-    print('⚠️ Time parsing error for "$time24": $e');
-    return time24;
   }
-}
+
+  String _formatTime(String time24) {
+    try {
+      String timeStr = time24.trim();
+      if (timeStr.contains(':') && timeStr.split(':').length == 3) {
+        final parts = timeStr.split(':');
+        timeStr = '${parts[0]}:${parts[1]}';
+      }
+      final time = DateFormat('HH:mm').parse(timeStr);
+      return DateFormat('h:mm a').format(time);
+    } catch (e) {
+      return time24;
+    }
+  }
+
+  String _formatDate(DateTime date) {
+    return DateFormat('EEEE, MMM dd, yyyy').format(date);
+  }
 }

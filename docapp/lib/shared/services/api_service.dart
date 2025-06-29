@@ -620,6 +620,157 @@ class ApiService {
     }
   }
 
+
+    // Payment Methods
+
+  /// Get all payments for current user
+  static Future<Map<String, dynamic>> getPayments() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/payments'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch payments: $e');
+    }
+  }
+
+  /// Get specific payment details
+  static Future<Map<String, dynamic>> getPayment(int paymentId) async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/payments/$paymentId'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch payment details: $e');
+    }
+  }
+
+  /// Initiate payment for an appointment
+  static Future<Map<String, dynamic>> initiatePayment({
+    required int appointmentId,
+    required String paymentMethod,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/appointments/$appointmentId/payment/initiate'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'payment_method': paymentMethod,
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to initiate payment: $e');
+    }
+  }
+
+  /// Initiate eSewa payment and get HTML form
+  static Future<String> initiateEsewaPayment({
+    required int paymentId,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/payments/esewa/initiate'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'payment_id': paymentId,
+        }),
+      );
+
+      if (response.statusCode >= 200 && response.statusCode < 300) {
+        return response.body; // HTML content for WebView
+      } else {
+        final Map<String, dynamic> data = jsonDecode(response.body);
+        throw Exception(data['message'] ?? 'Failed to initiate eSewa payment');
+      }
+    } catch (e) {
+      throw Exception('Failed to initiate eSewa payment: $e');
+    }
+  }
+
+  // Enhanced Appointment Methods
+
+  /// Get appointments with categorization
+static Future<Map<String, dynamic>> getAppointmentsByStatus() async {
+  try {
+    final response = await http.get(
+      Uri.parse(ApiConstants.appointments),
+      headers: _getHeaders(),
+    );
+
+    return _handleResponse(response);
+  } catch (e) {
+    throw Exception('Failed to fetch appointments: $e');
+  }
+}
+
+  /// Get appointment statistics
+  static Future<Map<String, dynamic>> getAppointmentStats() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/appointments/stats'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch appointment statistics: $e');
+    }
+  }
+
+  /// Reschedule appointment (reschedule)
+  static Future<Map<String, dynamic>> rescheduleAppointment({
+    required int appointmentId,
+    required DateTime appointmentDate,
+    required String slot,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConstants.appointments}/$appointmentId'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'appointment_date': appointmentDate.toIso8601String().split('T')[0],
+          'slot': slot,
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to reschedule appointment: $e');
+    }
+  }
+
+  // Helper method for parsing categorized appointments
+// Parse categorized appointments from API response
+static Map<String, List<Map<String, dynamic>>> parseCategorizedAppointments(Map<String, dynamic> response) {
+  if (response['success'] && response['data'] != null) {
+    final data = response['data'];
+    if (data['categorized'] != null) {
+      return {
+        'pending': List<Map<String, dynamic>>.from(data['categorized']['pending'] ?? []),
+        'booked': List<Map<String, dynamic>>.from(data['categorized']['booked'] ?? []),
+        'completed': List<Map<String, dynamic>>.from(data['categorized']['completed'] ?? []),
+        'missed': List<Map<String, dynamic>>.from(data['categorized']['missed'] ?? []),
+      };
+    }
+  }
+  
+  return {
+    'pending': [],
+    'booked': [],
+    'completed': [],
+    'missed': [],
+  };
+}
+
+
   // Helper method to handle responses
   static Map<String, dynamic> _handleResponse(http.Response response) {
     final Map<String, dynamic> data = jsonDecode(response.body);

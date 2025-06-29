@@ -13,4 +13,7 @@ class ApiConstants {
   static const String specializations = '$baseUrl/specializations';
   static const String patientView = '$baseUrl/patient-view';
   static const String doctorView = '$baseUrl/doctor-view';
+
+  //payments
+  static const String payments = '$baseUrl/payments';
 }
