@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'doctor_appointments_screen.dart';
 import 'doctor_profile_screen.dart';
 import 'doctor_schedule_screen.dart';
-import 'doctor_reviews_screen.dart'; // New import
+import 'doctor_reviews_screen.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -18,7 +19,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     const DoctorHomeScreen(),
     const DoctorAppointmentsScreen(),
     const DoctorScheduleScreen(),
-    const DoctorReviewsScreen(), // New screen
+    const DoctorReviewsScreen(),
     const DoctorProfileScreen(),
   ];
 
@@ -66,44 +67,46 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   }
 }
 
-// Home screen (unchanged)
+// Home screen
 class DoctorHomeScreen extends StatelessWidget {
   const DoctorHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Doctor Dashboard'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-      ),
-      body: const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.local_hospital,
-              size: 100,
-              color: Colors.green,
-            ),
-            SizedBox(height: 16),
-            Text(
-              'Welcome Doctor!',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+    return ExitWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Doctor Dashboard'),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+        ),
+        body: const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.local_hospital,
+                size: 100,
+                color: Colors.green,
               ),
-            ),
-            SizedBox(height: 8),
-            Text(
-              'Manage your appointments',
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey,
+              SizedBox(height: 16),
+              Text(
+                'Welcome Doctor!',
+                style: TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
-            ),
-          ],
+              SizedBox(height: 8),
+              Text(
+                'Manage your appointments',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.grey,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
