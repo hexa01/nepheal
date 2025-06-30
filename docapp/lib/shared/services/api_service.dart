@@ -620,8 +620,7 @@ class ApiService {
     }
   }
 
-
-    // Payment Methods
+  // Payment Methods
 
   /// Get all payments for current user
   static Future<Map<String, dynamic>> getPayments() async {
@@ -658,7 +657,8 @@ class ApiService {
   }) async {
     try {
       final response = await http.post(
-        Uri.parse('${ApiConstants.baseUrl}/appointments/$appointmentId/payment/initiate'),
+        Uri.parse(
+            '${ApiConstants.baseUrl}/appointments/$appointmentId/payment/initiate'),
         headers: _getHeaders(),
         body: jsonEncode({
           'payment_method': paymentMethod,
@@ -698,18 +698,18 @@ class ApiService {
   // Enhanced Appointment Methods
 
   /// Get appointments with categorization
-static Future<Map<String, dynamic>> getAppointmentsByStatus() async {
-  try {
-    final response = await http.get(
-      Uri.parse(ApiConstants.appointments),
-      headers: _getHeaders(),
-    );
+  static Future<Map<String, dynamic>> getAppointmentsByStatus() async {
+    try {
+      final response = await http.get(
+        Uri.parse(ApiConstants.appointments),
+        headers: _getHeaders(),
+      );
 
-    return _handleResponse(response);
-  } catch (e) {
-    throw Exception('Failed to fetch appointments: $e');
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch appointments: $e');
+    }
   }
-}
 
   /// Get appointment statistics
   static Future<Map<String, dynamic>> getAppointmentStats() async {
@@ -749,27 +749,31 @@ static Future<Map<String, dynamic>> getAppointmentsByStatus() async {
 
   // Helper method for parsing categorized appointments
 // Parse categorized appointments from API response
-static Map<String, List<Map<String, dynamic>>> parseCategorizedAppointments(Map<String, dynamic> response) {
-  if (response['success'] && response['data'] != null) {
-    final data = response['data'];
-    if (data['categorized'] != null) {
-      return {
-        'pending': List<Map<String, dynamic>>.from(data['categorized']['pending'] ?? []),
-        'booked': List<Map<String, dynamic>>.from(data['categorized']['booked'] ?? []),
-        'completed': List<Map<String, dynamic>>.from(data['categorized']['completed'] ?? []),
-        'missed': List<Map<String, dynamic>>.from(data['categorized']['missed'] ?? []),
-      };
+  static Map<String, List<Map<String, dynamic>>> parseCategorizedAppointments(
+      Map<String, dynamic> response) {
+    if (response['success'] && response['data'] != null) {
+      final data = response['data'];
+      if (data['categorized'] != null) {
+        return {
+          'pending': List<Map<String, dynamic>>.from(
+              data['categorized']['pending'] ?? []),
+          'booked': List<Map<String, dynamic>>.from(
+              data['categorized']['booked'] ?? []),
+          'completed': List<Map<String, dynamic>>.from(
+              data['categorized']['completed'] ?? []),
+          'missed': List<Map<String, dynamic>>.from(
+              data['categorized']['missed'] ?? []),
+        };
+      }
     }
-  }
-  
-  return {
-    'pending': [],
-    'booked': [],
-    'completed': [],
-    'missed': [],
-  };
-}
 
+    return {
+      'pending': [],
+      'booked': [],
+      'completed': [],
+      'missed': [],
+    };
+  }
 
   // Helper method to handle responses
   static Map<String, dynamic> _handleResponse(http.Response response) {

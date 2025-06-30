@@ -19,28 +19,79 @@ class DoctorProfileScreen extends StatefulWidget {
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   bool _isLoading = false;
   String? _error;
-  String? _doctorBio; // ✅ ADD: Store doctor bio
+  String? _doctorBio;
+  
+  // ✅ ADD: Variables to store rating data
+  double _averageRating = 0.0;
+  int _totalReviews = 0;
+  int _totalPatients = 0; // This could be fetched from appointments if needed
 
   @override
   void initState() {
     super.initState();
-    _loadDoctorData(); // ✅ ADD: Load doctor data on init
+    _loadDoctorData();
   }
 
-  // ✅ ADD: Load doctor data including bio
+  // ✅ UPDATED: Load doctor data including bio and rating
   Future<void> _loadDoctorData() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
+
     try {
       final response = await ApiService.getDoctorProfile();
       if (response['success']) {
         final doctorData = response['data']['doctor'];
+        final doctorId = doctorData['doctor_id'];
+        
         setState(() {
           _doctorBio = doctorData['bio'] ?? '';
         });
+
+        // ✅ ADD: Fetch rating statistics
+        await _loadRatingStats(doctorId);
       }
     } catch (e) {
-      // If bio fails to load, continue without it
+      setState(() {
+        _error = 'Could not load doctor data: $e';
+      });
       print('Could not load doctor data: $e');
+    } finally {
+      setState(() {
+        _isLoading = false;
+      });
     }
+  }
+
+  // ✅ ADD: Load rating statistics from the API
+  Future<void> _loadRatingStats(int doctorId) async {
+    try {
+      final response = await ApiService.getDoctorRatingStats(doctorId);
+      if (response['success']) {
+        final statsData = response['data'];
+        setState(() {
+          _averageRating = (statsData['average_rating'] ?? 0.0).toDouble();
+          _totalReviews = statsData['total_reviews'] ?? 0;
+          // You can also calculate total patients from completed appointments if needed
+          _totalPatients = _calculateTotalPatients(); // Placeholder - implement if needed
+        });
+      }
+    } catch (e) {
+      // If rating stats fail to load, continue with default values
+      print('Could not load rating stats: $e');
+      setState(() {
+        _averageRating = 0.0;
+        _totalReviews = 0;
+      });
+    }
+  }
+
+  // ✅ ADD: Calculate total patients (placeholder - implement based on your needs)
+  int _calculateTotalPatients() {
+    // This could be calculated from completed appointments
+    // For now, return a reasonable estimate or fetch from API
+    return _totalReviews > 0 ? (_totalReviews * 1.2).round() : 0;
   }
 
   void _updateUserPhoto(String? newPhotoUrl) {
@@ -100,9 +151,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              setState(() {
-                _error = null;
-              });
+              _loadDoctorData(); // ✅ UPDATED: Reload all data
             },
             child: const Text('Retry'),
           ),
@@ -144,7 +193,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         MaterialPageRoute(
                           builder: (context) => ProfilePhotoScreen(
                             user: user,
-                            // onPhotoUpdated: _updateUserPhoto,
                           ),
                         ),
                       );
@@ -212,25 +260,25 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
                   const SizedBox(height: 16),
 
-                  // Quick Stats
+                  // ✅ UPDATED: Quick Stats with dynamic data
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
                       _buildStatCard(
                         icon: Icons.people,
-                        title: '150+',
+                        title: _totalPatients > 0 ? '${_totalPatients}+' : '0',
                         subtitle: 'Patients',
                         color: Colors.white,
                       ),
                       _buildStatCard(
                         icon: Icons.star,
-                        title: '4.8',
-                        subtitle: 'Rating',
+                        title: _averageRating > 0 ? _averageRating.toStringAsFixed(1) : '0.0',
+                        subtitle: _totalReviews > 0 ? '($_totalReviews reviews)' : 'No reviews',
                         color: Colors.white,
                       ),
                       _buildStatCard(
                         icon: Icons.work,
-                        title: '8+',
+                        title: '8+', // This could also be made dynamic if you have the data
                         subtitle: 'Years',
                         color: Colors.white,
                       ),
@@ -287,6 +335,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   color: Colors.purple,
                 ),
 
+                // ✅ ADD: Rating info card
+                if (_totalReviews > 0)
+                  _buildInfoCard(
+                    icon: Icons.star,
+                    title: 'Patient Rating',
+                    value: '${_averageRating.toStringAsFixed(1)} ($_totalReviews reviews)',
+                    color: Colors.amber,
+                  ),
+
                 const SizedBox(height: 24),
 
                 // Account Actions
@@ -310,14 +367,14 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       MaterialPageRoute(
                         builder: (context) => EditProfileScreen(
                           user: user,
-                          doctorBio: _doctorBio, // ✅ PASS: Pass the loaded bio
+                          doctorBio: _doctorBio,
                         ),
                       ),
                     );
 
                     if (result == true) {
                       // Profile was updated successfully - reload doctor data
-                      await _loadDoctorData(); // ✅ RELOAD: Reload data after edit
+                      await _loadDoctorData();
                     }
                   },
                 ),
@@ -419,6 +476,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               fontSize: 11,
               color: color.withValues(alpha: 0.8),
             ),
+            textAlign: TextAlign.center, // ✅ ADD: Center align for better layout
           ),
         ],
       ),

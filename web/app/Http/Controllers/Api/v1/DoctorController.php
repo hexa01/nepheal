@@ -211,10 +211,27 @@ class DoctorController extends BaseController
                 'profile_photo_url' => $doctor->user->profile_photo_url,
                 'profile_photo' => $doctor->user->profile_photo,
                 'specialization' => $doctor->specialization->name ?? 'General',
+                'average_rating' => round($doctor->average_rating, 1),
+                'total_reviews' => $doctor->total_reviews,
+                'rating_breakdown' => $doctor->getReviewsCountByRating(),
+                // ✅ ADD: Calculate total patients from completed appointments
+                'total_patients' => $this->calculateTotalPatients($doctor),
+
             ],
         ];
 
         return $this->successResponse('Your information retrieved successfully', $data);
+    }
+
+    /**
+     * ✅ ADD: Calculate total unique patients from completed appointments
+     */
+    private function calculateTotalPatients(Doctor $doctor)
+    {
+        return $doctor->appointments()
+            ->where('status', 'completed')
+            ->distinct('patient_id')
+            ->count('patient_id');
     }
 
     /**

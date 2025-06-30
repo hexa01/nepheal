@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'doctor_appointments_screen.dart';
 import 'doctor_profile_screen.dart';
 import 'doctor_schedule_screen.dart';
+import 'doctor_reviews_screen.dart'; // New import
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({super.key});
@@ -17,6 +18,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     const DoctorHomeScreen(),
     const DoctorAppointmentsScreen(),
     const DoctorScheduleScreen(),
+    const DoctorReviewsScreen(), // New screen
     const DoctorProfileScreen(),
   ];
 
@@ -25,6 +27,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
     return Scaffold(
       body: _screens[_currentIndex],
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed,
         currentIndex: _currentIndex,
         onTap: (index) {
           setState(() {
@@ -33,6 +36,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         },
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
+        selectedFontSize: 10, // Smaller font for 5 items
+        unselectedFontSize: 10,
+        iconSize: 22, // Smaller icons for 5 items
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -47,6 +53,10 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             label: 'Schedule',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.rate_review),
+            label: 'Reviews',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
           ),
@@ -56,7 +66,7 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   }
 }
 
-// Home screen
+// Home screen (unchanged)
 class DoctorHomeScreen extends StatelessWidget {
   const DoctorHomeScreen({super.key});
 

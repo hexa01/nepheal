@@ -33,59 +33,58 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
     _loadSchedule();
   }
 
- Future<void> _loadSchedule() async {
-  setState(() {
-    _isLoading = true;
-    _error = null;
-  });
+  Future<void> _loadSchedule() async {
+    setState(() {
+      _isLoading = true;
+      _error = null;
+    });
 
-  try {
-    // Start both futures without awaiting yet
-    final scheduleFuture = ApiService.getDoctorSchedule();
-    final appointmentsFuture = ApiService.getDaysWithAppointments();
+    try {
+      // Start both futures without awaiting yet
+      final scheduleFuture = ApiService.getDoctorSchedule();
+      final appointmentsFuture = ApiService.getDaysWithAppointments();
 
-    // Wait for both to complete in parallel
-    final results = await Future.wait([scheduleFuture, appointmentsFuture]);
+      // Wait for both to complete in parallel
+      final results = await Future.wait([scheduleFuture, appointmentsFuture]);
 
-    final scheduleResponse = results[0];
-    final appointmentsResponse = results[1];
+      final scheduleResponse = results[0];
+      final appointmentsResponse = results[1];
 
-    if (scheduleResponse['success']) {
-      final scheduleData = scheduleResponse['data'] as List;
-      _schedules = scheduleData.map((json) => Schedule.fromJson(json)).toList();
+      if (scheduleResponse['success']) {
+        final scheduleData = scheduleResponse['data'] as List;
+        _schedules = scheduleData.map((json) => Schedule.fromJson(json)).toList();
 
-      // Sort schedules by day order
-      _schedules.sort((a, b) {
-        return _weekDays.indexOf(a.fullDayName).compareTo(_weekDays.indexOf(b.fullDayName));
-      });
-    } else {
-      throw Exception(scheduleResponse['message'] ?? 'Failed to load schedule');
-    }
-
-    if (appointmentsResponse['success']) {
-      final daysData = appointmentsResponse['data'] as Map<String, dynamic>;
-      Map<String, bool> hasAppointments = {};
-      for (String day in _weekDays) {
-        final dayData = daysData[day] as Map<String, dynamic>?;
-        hasAppointments[day] = dayData?['has_appointments'] ?? false;
+        // Sort schedules by day order
+        _schedules.sort((a, b) {
+          return _weekDays.indexOf(a.fullDayName).compareTo(_weekDays.indexOf(b.fullDayName));
+        });
+      } else {
+        throw Exception(scheduleResponse['message'] ?? 'Failed to load schedule');
       }
-      _dayHasAppointments = hasAppointments;
-    } else {
-      // If appointments API fails, default to no appointments
-      _dayHasAppointments = {for (var day in _weekDays) day: false};
-    }
 
-  } catch (e) {
-    _error = 'Error: ${e.toString()}';
-  } finally {
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
+      if (appointmentsResponse['success']) {
+        final daysData = appointmentsResponse['data'] as Map<String, dynamic>;
+        Map<String, bool> hasAppointments = {};
+        for (String day in _weekDays) {
+          final dayData = daysData[day] as Map<String, dynamic>?;
+          hasAppointments[day] = dayData?['has_appointments'] ?? false;
+        }
+        _dayHasAppointments = hasAppointments;
+      } else {
+        // If appointments API fails, default to no appointments
+        _dayHasAppointments = {for (var day in _weekDays) day: false};
+      }
+
+    } catch (e) {
+      _error = 'Error: ${e.toString()}';
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
-}
-
 
   Future<void> _checkAppointmentsForAllDays() async {
     try {
@@ -143,6 +142,11 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
           SnackBar(
             content: Text('Toggled availability for $day'),
             backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            margin: const EdgeInsets.all(16),
           ),
         );
       } else {
@@ -153,6 +157,11 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
         SnackBar(
           content: Text('Error: ${e.toString()}'),
           backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(8),
+          ),
+          margin: const EdgeInsets.all(16),
         ),
       );
     } finally {
@@ -166,8 +175,12 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('My Schedule'),
+        title: const Text(
+          'My Schedule',
+          style: TextStyle(fontWeight: FontWeight.w600),
+        ),
         backgroundColor: Colors.green,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -253,48 +266,62 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   Widget _buildScheduleContent() {
     return Column(
       children: [
-        // Header Info
+        // Header Info Card - Consistent with your app theme
         Container(
-          width: double.infinity,
           margin: const EdgeInsets.all(16),
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           decoration: BoxDecoration(
             gradient: LinearGradient(
               colors: [Colors.green.shade50, Colors.green.shade100],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
             ),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.green.shade200),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.green.shade200, width: 1),
           ),
-          child: Column(
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Icon(Icons.schedule, color: Colors.green.shade600, size: 24),
-                  const SizedBox(width: 12),
-                  Text(
-                    'Weekly Schedule Management',
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.green.shade800,
-                    ),
-                  ),
-                ],
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade600,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.schedule,
+                  color: Colors.white,
+                  size: 20,
+                ),
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Note: You cannot modify days with existing appointments.',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.green.shade700,
-                  height: 1.4,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Weekly Schedule Management',
+                      style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: Colors.green.shade800,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'You cannot modify days with existing appointments',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.green.shade600,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
           ),
         ),
 
-        // Schedule List
+        // Schedule List - Compact Cards
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -304,7 +331,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
               final hasAppointments =
                   _dayHasAppointments[schedule.fullDayName] ?? false;
 
-              return _buildScheduleCard(schedule, hasAppointments);
+              return _buildCompactScheduleCard(schedule, hasAppointments);
             },
           ),
         ),
@@ -312,261 +339,250 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
     );
   }
 
-  Widget _buildScheduleCard(Schedule schedule, bool hasAppointments) {
+  Widget _buildCompactScheduleCard(Schedule schedule, bool hasAppointments) {
     final isUpdating = _updatingDay == schedule.day;
     final canEdit = !hasAppointments && !isUpdating;
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
+      margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
-            color: hasAppointments
-                ? Colors.orange.withValues(alpha: 0.3)
-                : Colors.green.withValues(alpha: 0.3),
-            width: 2),
+          color: hasAppointments
+              ? Colors.orange.shade200
+              : Colors.green.shade200,
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: (hasAppointments ? Colors.orange : Colors.green)
-                .withValues(alpha: 0.1),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
           ),
         ],
       ),
-      child: Column(
-        children: [
-          // Header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: (hasAppointments
-                  ? Colors.orange.withValues(alpha: 0.1)
-                  : Colors.green.withValues(alpha: 0.1)),
-              borderRadius: const BorderRadius.only(
-                topLeft: Radius.circular(18),
-                topRight: Radius.circular(18),
-              ),
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: (hasAppointments
-                        ? Colors.orange.withValues(alpha: 0.2)
-                        : Colors.green.withValues(alpha: 0.2)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Icon(
-                    _getDayIcon(schedule.day),
-                    size: 24,
-                    color: hasAppointments
-                        ? Colors.orange.shade600
-                        : Colors.green.shade600,
-                  ),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        schedule.fullDayName,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: hasAppointments
-                              ? Colors.orange.shade800
-                              : Colors.green.shade800,
-                        ),
-                      ),
-                      Text(
-                        hasAppointments
-                            ? 'Has appointments - Cannot modify'
-                            : 'Available for editing',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color:
-                              (hasAppointments ? Colors.orange : Colors.green)
-                                  .withValues(alpha: 0.8),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (hasAppointments)
-                  Container(
-                    padding:
-                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.orange.shade100,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(color: Colors.orange.shade300),
-                    ),
-                    child: Text(
-                      'LOCKED',
-                      style: TextStyle(
-                        fontSize: 10,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.orange.shade700,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-
-          // Content
-          Padding(
-            padding: const EdgeInsets.all(20),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: canEdit ? () => _editSchedule(schedule) : null,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
             child: Column(
               children: [
-                // Current Schedule Info
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade50,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade200),
-                  ),
-                  child: Column(
-                    children: [
-                      Row(
+                // Header Row
+                Row(
+                  children: [
+                    // Day Icon & Name
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: hasAppointments
+                            ? Colors.orange.shade50
+                            : Colors.green.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        _getDayIcon(schedule.day),
+                        size: 20,
+                        color: hasAppointments
+                            ? Colors.orange.shade600
+                            : Colors.green.shade600,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Icon(Icons.access_time,
-                              size: 16, color: Colors.grey.shade600),
-                          const SizedBox(width: 8),
                           Text(
-                            'Working Hours',
+                            schedule.fullDayName,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Colors.black87,
+                            ),
+                          ),
+                          Text(
+                            hasAppointments
+                                ? 'Has appointments'
+                                : 'Available for editing',
                             style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey.shade600,
+                              fontSize: 11,
+                              color: hasAppointments
+                                  ? Colors.orange.shade600
+                                  : Colors.green.shade600,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 8),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ),
+                    // Status Toggle or Lock Icon
+                    if (canEdit)
+                      Switch(
+                        value: schedule.status == 'available',
+                        onChanged: (value) => _toggleStatus(schedule.day),
+                        activeColor: Colors.green.shade600,
+                        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                      )
+                    else
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.orange.shade100,
+                          borderRadius: BorderRadius.circular(6),
+                          border: Border.all(color: Colors.orange.shade300),
+                        ),
+                        child: Text(
+                          'LOCKED',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.orange.shade700,
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+
+                const SizedBox(height: 12),
+
+                // Time & Slots Row
+                Row(
+                  children: [
+                    // Time Range
+                    Expanded(
+                      flex: 2,
+                      child: Row(
                         children: [
+                          Icon(
+                            Icons.access_time,
+                            size: 16,
+                            color: Colors.grey.shade600,
+                          ),
+                          const SizedBox(width: 6),
                           Text(
-                            schedule.timeRange,
+                            '${schedule.startTime} - ${schedule.endTime}',
                             style: const TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w500,
                               color: Colors.black87,
                             ),
                           ),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.shade50,
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.blue.shade200),
-                            ),
-                            child: Text(
-                              '${schedule.calculatedSlots} slots',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.blue.shade700,
-                              ),
-                            ),
-                          ),
                         ],
                       ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    ),
+                    
+                    // Slots Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: Colors.blue.shade200,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Text(
+                        '${schedule.calculatedSlots} slots',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.blue.shade700,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Status Badge
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: schedule.status == 'available'
+                            ? Colors.green.shade50
+                            : Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(6),
+                        border: Border.all(
+                          color: schedule.status == 'available'
+                              ? Colors.green.shade200
+                              : Colors.red.shade200,
+                          width: 0.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              Icon(
-                                schedule.status == 'available'
-                                    ? Icons.toggle_on
-                                    : Icons.toggle_off,
-                                color: schedule.status == 'available'
-                                    ? Colors.green
-                                    : Colors.grey,
-                              ),
-                              const SizedBox(width: 8),
-                              Text(
-                                schedule.status == 'available'
-                                    ? 'Available'
-                                    : 'Not Available',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: schedule.status == 'available'
-                                      ? Colors.green.shade700
-                                      : Colors.grey.shade700,
-                                ),
-                              ),
-                            ],
+                          Container(
+                            width: 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: schedule.status == 'available'
+                                  ? Colors.green.shade600
+                                  : Colors.red.shade600,
+                              shape: BoxShape.circle,
+                            ),
                           ),
-                          Switch(
-                            value: schedule.status == 'available',
-                            activeColor: Colors.green,
-                            inactiveThumbColor: Colors.grey,
-                            onChanged: (hasAppointments || isUpdating)
-                                ? null
-                                : (_) => _toggleStatus(schedule.day),
+                          const SizedBox(width: 4),
+                          Text(
+                            schedule.status == 'available' ? 'Active' : 'Off',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: schedule.status == 'available'
+                                  ? Colors.green.shade700
+                                  : Colors.red.shade700,
+                            ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 16),
+                    ),
+                  ],
+                ),
+
+                // Loading Indicator
+                if (isUpdating) ...[
+                  const SizedBox(height: 12),
+                  Row(
+                    children: [
+                      SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation<Color>(
+                            Colors.green.shade600,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Updating...',
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: Colors.green.shade600,
+                        ),
+                      ),
                     ],
                   ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // Edit Button
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton.icon(
-                    onPressed: canEdit ? () => _editSchedule(schedule) : null,
-                    icon: isUpdating
-                        ? const SizedBox(
-                            width: 16,
-                            height: 16,
-                            child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
-                          )
-                        : Icon(
-                            hasAppointments ? Icons.lock : Icons.edit,
-                            size: 18,
-                          ),
-                    label: Text(
-                      isUpdating
-                          ? 'Updating...'
-                          : hasAppointments
-                              ? 'Cannot Edit (Has Appointments)'
-                              : 'Edit Schedule',
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor:
-                          canEdit ? Colors.green : Colors.grey.shade400,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
+                ],
               ],
             ),
           ),
-        ],
+        ),
       ),
     );
   }
@@ -647,6 +663,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              margin: const EdgeInsets.all(16),
             ),
           );
         }
@@ -664,6 +681,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(10),
             ),
+            margin: const EdgeInsets.all(16),
           ),
         );
       }
@@ -743,79 +761,159 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
   Widget build(BuildContext context) {
     return AlertDialog(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      title: Text('Edit ${widget.schedule.fullDayName} Schedule'),
+      title: Text(
+        'Edit ${widget.schedule.fullDayName}',
+        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w600),
+      ),
       content: SizedBox(
         width: double.maxFinite,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            // Start Time
-            ListTile(
-              leading: Icon(Icons.schedule, color: Colors.green.shade600),
-              title: const Text('Start Time'),
-              subtitle: Text(_formatTime(_startTime)),
-              trailing: const Icon(Icons.keyboard_arrow_right),
-              onTap: () async {
-                final time = await showTimePicker(
-                  context: context,
-                  initialTime: _startTime,
-                );
-                if (time != null) {
-                  setState(() {
-                    _startTime = time;
-                  });
-                  _validateTimes();
-                }
-              },
-            ),
-
-            // End Time
-            ListTile(
-              leading: Icon(Icons.schedule_send, color: Colors.green.shade600),
-              title: const Text('End Time'),
-              subtitle: Text(_formatTime(_endTime)),
-              trailing: const Icon(Icons.keyboard_arrow_right),
-              onTap: () async {
-                final time = await showTimePicker(
-                  context: context,
-                  initialTime: _endTime,
-                );
-                if (time != null) {
-                  setState(() {
-                    _endTime = time;
-                  });
-                  _validateTimes();
-                }
-              },
+            // Time Selection
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.grey.shade200),
+              ),
+              child: Column(
+                children: [
+                  // Start Time
+                  Row(
+                    children: [
+                      Icon(Icons.access_time, 
+                           color: Colors.green.shade600, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Start Time',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () async {
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: _startTime,
+                                );
+                                if (time != null) {
+                                  setState(() => _startTime = time);
+                                  _validateTimes();
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Text(
+                                  _startTime.format(context),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  
+                  const SizedBox(height: 16),
+                  
+                  // End Time
+                  Row(
+                    children: [
+                      Icon(Icons.access_time_filled, 
+                           color: Colors.red.shade600, size: 20),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'End Time',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                                color: Colors.black54,
+                              ),
+                            ),
+                            GestureDetector(
+                              onTap: () async {
+                                final time = await showTimePicker(
+                                  context: context,
+                                  initialTime: _endTime,
+                                );
+                                if (time != null) {
+                                  setState(() => _endTime = time);
+                                  _validateTimes();
+                                }
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  vertical: 8,
+                                  horizontal: 12,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.grey.shade300),
+                                ),
+                                child: Text(
+                                  _endTime.format(context),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
 
             const SizedBox(height: 16),
 
-            // Slots Info
+            // Slots Preview
             Container(
-              width: double.infinity,
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: Colors.blue.shade50,
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.blue.shade200),
               ),
-              child: Column(
+              child: Row(
                 children: [
+                  Icon(Icons.event_available, 
+                       color: Colors.blue.shade600, size: 20),
+                  const SizedBox(width: 8),
                   Text(
                     'Available Slots: ${_calculateSlots()}',
                     style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
                       color: Colors.blue.shade700,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Each slot is 30 minutes',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.blue.shade600,
                     ),
                   ),
                 ],
@@ -826,7 +924,6 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
             if (_error != null) ...[
               const SizedBox(height: 12),
               Container(
-                width: double.infinity,
                 padding: const EdgeInsets.all(12),
                 decoration: BoxDecoration(
                   color: Colors.red.shade50,
@@ -835,14 +932,15 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error, color: Colors.red.shade600, size: 20),
+                    Icon(Icons.error_outline, 
+                         color: Colors.red.shade600, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _error!,
                         style: TextStyle(
+                          fontSize: 12,
                           color: Colors.red.shade700,
-                          fontSize: 14,
                         ),
                       ),
                     ),
@@ -856,7 +954,10 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
       actions: [
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
+          child: Text(
+            'Cancel',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
         ),
         ElevatedButton(
           onPressed: _error == null && _validateTimes()
@@ -870,6 +971,9 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.green,
             foregroundColor: Colors.white,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
           ),
           child: const Text('Save'),
         ),
