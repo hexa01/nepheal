@@ -534,7 +534,6 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
             children: [
               Row(
                 children: [
-                  //TODO: Enhanced Doctor Avatar with Profile Photo
                   CompactProfileAvatar(
                     imageUrl: doctor.user?.profilePhotoUrl,
                     initials: doctor.user?.initials ??

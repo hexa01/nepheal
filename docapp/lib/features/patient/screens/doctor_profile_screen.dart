@@ -409,12 +409,89 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                     ),
 
                   if (doctor.address != null && doctor.address!.isNotEmpty)
-                    _buildContactItem(
-                      icon: Icons.location_on,
-                      title: 'Address',
-                      value: doctor.address!,
-                      color: Colors.red,
+                    Container(
+    width: double.infinity,
+    margin: const EdgeInsets.only(bottom: 12),
+    padding: const EdgeInsets.all(16),
+    decoration: BoxDecoration(
+      gradient: LinearGradient(
+        colors: [Colors.red.shade50, Colors.red.shade100],
+        begin: Alignment.topLeft,
+        end: Alignment.bottomRight,
+      ),
+      borderRadius: BorderRadius.circular(12),
+      border: Border.all(color: Colors.red.shade300),
+    ),
+    child: Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.red.shade200,
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Icon(Icons.location_on, color: Colors.red.shade700, size: 20),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Clinic Location',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.red.shade600,
+                      fontWeight: FontWeight.w500,
                     ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    doctor.address!,
+                    style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.red.shade800,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.8),
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(
+                Icons.business,
+                size: 14,
+                color: Colors.red.shade600,
+              ),
+              const SizedBox(width: 4),
+              Text(
+                'Independent Practice',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.red.shade700,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  ),
 
                   const SizedBox(height: 24),
 
