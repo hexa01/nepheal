@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:nepheal/features/patient/screens/payment_history_screen.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/specialization.dart';
-import '../../../core/storage/storage_service.dart';
 
 import 'doctors_list_screen.dart';
 import 'patient_profile_screen.dart';
@@ -20,16 +18,18 @@ class _PatientDashboardState extends State<PatientDashboard> {
   int _currentIndex = 0;
 
   void _changeTab(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+    // Add bounds checking to prevent RangeError
+    if (index >= 0 && index < _screens.length) {
+      setState(() {
+        _currentIndex = index;
+      });
+    }
   }
 
   List<Widget> get _screens => [
         PatientHomeScreen(onNavigate: _changeTab),
         const DoctorsListScreen(),
         const MyAppointmentsScreen(),
-        // const PaymentHistoryScreen(),
         const MyReviewsScreen(),
         const PatientProfileScreen(),
       ];
@@ -37,7 +37,7 @@ class _PatientDashboardState extends State<PatientDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: _currentIndex < _screens.length ? _screens[_currentIndex] : _screens[0],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -88,9 +88,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _loadSpecializations();
-    });
+    _loadSpecializations();
   }
 
   Future<void> _loadSpecializations() async {
@@ -100,33 +98,25 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     });
 
     try {
-      final token = StorageService.getToken();
-      if (token == null) {
-        setState(() {
-          _error = 'Authentication required';
-          _isLoading = false;
-        });
-        return;
-      }
-
       final response = await ApiService.getSpecializations();
-
-      if (response['success'] == true) {
+      if (response['success']) {
+        final specializationsData = response['data'] as List<dynamic>;
         setState(() {
-          _specializations = (response['data'] as List)
-              .map((json) => Specialization.fromJson(json))
+          _specializations = specializationsData
+              .map((data) => Specialization.fromJson(data))
               .toList();
-          _isLoading = false;
         });
       } else {
         setState(() {
           _error = response['message'] ?? 'Failed to load specializations';
-          _isLoading = false;
         });
       }
     } catch (e) {
       setState(() {
-        _error = 'Connection error';
+        _error = e.toString().replaceAll('Exception: ', '');
+      });
+    } finally {
+      setState(() {
         _isLoading = false;
       });
     }
@@ -137,11 +127,12 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     return Scaffold(
       body: CustomScrollView(
         slivers: [
-          // Gradient App Bar
+          // App Bar with Gradient
           SliverAppBar(
             expandedHeight: 200,
             floating: false,
             pinned: true,
+            automaticallyImplyLeading: false,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -149,24 +140,26 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
                     colors: [
-                      Colors.blue.shade600,
-                      Colors.blue.shade400,
-                      Colors.blue.shade300,
+                      Colors.blue.shade700,
+                      Colors.blue.shade500,
                     ],
                   ),
                 ),
-                child: const SafeArea(
+                child: SafeArea(
                   child: Padding(
-                    padding: EdgeInsets.all(24),
+                    padding: const EdgeInsets.all(20),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                         Row(
                           children: [
-                            Icon(Icons.local_hospital,
-                                size: 40, color: Colors.white),
-                            SizedBox(width: 12),
+                            Icon(
+                              Icons.local_hospital,
+                              color: Colors.white,
+                              size: 40,
+                            ),
+                            const SizedBox(width: 12),
                             Text(
                               'Nepheal',
                               style: TextStyle(
@@ -212,223 +205,49 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Enhanced Quick Actions with Reviews
-                  Row(
+                  // Quick Action Cards Grid (Back to 2x2 original layout)
+                  GridView.count(
+                    crossAxisCount: 2,
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisSpacing: 16,
+                    mainAxisSpacing: 16,
+                    childAspectRatio: 1.1,
                     children: [
-                      Expanded(
-                        child: _buildQuickActionCard(
-                          icon: Icons.search,
-                          title: 'Find Doctors',
-                          subtitle: 'Browse & book',
-                          color: Colors.blue,
-                          onTap: () => widget.onNavigate(1),
-                        ),
+                      _buildActionCard(
+                        Icons.search,
+                        'Find Doctors',
+                        'Browse specialists',
+                        Colors.blue,
+                        () => widget.onNavigate(1),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildQuickActionCard(
-                          icon: Icons.calendar_today,
-                          title: 'Appointments',
-                          subtitle: 'View & manage',
-                          color: Colors.green,
-                          onTap: () => widget.onNavigate(2),
-                        ),
+                      _buildActionCard(
+                        Icons.calendar_today,
+                        'Appointments',
+                        'Manage bookings',
+                        Colors.green,
+                        () => widget.onNavigate(2),
                       ),
-                    ],
-                  ),
-
-                  const SizedBox(height: 12),
-
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildQuickActionCard(
-                          icon: Icons.rate_review,
-                          title: 'My Reviews',
-                          subtitle: 'Share experience',
-                          color: Colors.amber,
-                          onTap: () => widget.onNavigate(3),
-                        ),
+                      _buildActionCard(
+                        Icons.rate_review,
+                        'Reviews',
+                        'Your feedback',
+                        Colors.purple,
+                        () => widget.onNavigate(3),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _buildQuickActionCard(
-                          icon: Icons.favorite,
-                          title: 'Health Tips',
-                          subtitle: 'Stay healthy',
-                          color: Colors.red,
-                          onTap: () {
-                            // Scroll to health tips section
-                          },
-                        ),
+                      _buildActionCard(
+                        Icons.person,
+                        'Profile',
+                        'Account settings',
+                        Colors.orange,
+                        () => widget.onNavigate(4),
                       ),
                     ],
                   ),
 
                   const SizedBox(height: 32),
 
-                  // Specializations Section - Horizontal
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Text(
-                        'Specializations',
-                        style: TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      TextButton(
-                        onPressed: () => widget.onNavigate(1),
-                        child: const Text('View All'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Horizontal Specializations
-                  SizedBox(
-                    height: 120,
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _error != null
-                            ? Center(
-                                child: Column(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    Icon(Icons.error,
-                                        size: 32, color: Colors.red.shade400),
-                                    const SizedBox(height: 8),
-                                    Text(
-                                      _error!,
-                                      style: TextStyle(
-                                        color: Colors.red.shade600,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                    TextButton(
-                                      onPressed: _loadSpecializations,
-                                      style: TextButton.styleFrom(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 12, vertical: 4),
-                                      ),
-                                      child: const Text('Retry',
-                                          style: TextStyle(fontSize: 12)),
-                                    ),
-                                  ],
-                                ),
-                              )
-                            : _specializations.isEmpty
-                                ? _buildStaticSpecializationsList()
-                                : ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.only(right: 8),
-                                    itemCount: _specializations.length,
-                                    itemBuilder: (context, index) {
-                                      final spec = _specializations[index];
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 12),
-                                        child:
-                                            _buildSpecializationCard(spec.name),
-                                      );
-                                    },
-                                  ),
-                  ),
-
-                  const SizedBox(height: 32),
-
-                  // Reviews Summary Section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.amber.shade50, Colors.amber.shade100],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.amber.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.star,
-                                color: Colors.amber.shade600, size: 24),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Patient Reviews',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.amber.shade800,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'Share your experiences with doctors to help other patients make informed decisions.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.amber.shade700,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: OutlinedButton.icon(
-                                onPressed: () => widget.onNavigate(3),
-                                icon: const Icon(Icons.rate_review, size: 18),
-                                label: const Text(
-                                  'My Reviews',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.amber.shade700,
-                                  side:
-                                      BorderSide(color: Colors.amber.shade300),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: ElevatedButton.icon(
-                                onPressed: () => widget.onNavigate(2),
-                                icon: const Icon(Icons.edit, size: 18),
-                                label: const Text(
-                                  'Write Review',
-                                  style: TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Colors.amber.shade600,
-                                  foregroundColor: Colors.white,
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                  padding:
-                                      const EdgeInsets.symmetric(vertical: 12),
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-
-                  const SizedBox(height: 24),
-
-                  // Health Tips Section
+                  // Health Tip Section
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(20),
@@ -470,65 +289,42 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 32),
 
-                  // Emergency Contact Section
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.red.shade50, Colors.red.shade100],
-                      ),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: Colors.red.shade200),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(Icons.emergency,
-                                color: Colors.red.shade600, size: 24),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Emergency Contact',
-                              style: TextStyle(
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red.shade800,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-                        Text(
-                          'In case of medical emergency, call 911 or your local emergency number immediately.',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.red.shade700,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            Icon(Icons.phone,
-                                color: Colors.red.shade600, size: 18),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Emergency: 911',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.red.shade700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                  // Medical Specializations Section
+                  const Text(
+                    'Medical Specializations',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // Specializations Horizontal List
+                  SizedBox(
+                    height: 120,
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _error != null
+                            ? _buildStaticSpecializationsList()
+                            : _specializations.isEmpty
+                                ? _buildStaticSpecializationsList()
+                                : ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.only(right: 8),
+                                    itemCount: _specializations.length,
+                                    itemBuilder: (context, index) {
+                                      return Padding(
+                                        padding: const EdgeInsets.only(right: 12),
+                                        child: _buildSpecializationCard(
+                                            _specializations[index].name),
+                                      );
+                                    },
+                                  ),
+                  ),
+                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -538,22 +334,20 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     );
   }
 
-  Widget _buildQuickActionCard({
-    required IconData icon,
-    required String title,
-    required String subtitle,
-    required Color color,
-    required VoidCallback onTap,
-  }) {
+  Widget _buildActionCard(
+    IconData icon,
+    String title,
+    String subtitle,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.1),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: color.withValues(alpha: 0.3)),
           boxShadow: [
             BoxShadow(
               color: color.withValues(alpha: 0.1),
@@ -562,35 +356,38 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 24),
               ),
-              child: Icon(icon, color: color, size: 24),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: color.withValues(alpha: 0.8),
+              const SizedBox(height: 12),
+              Text(
+                title,
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                  color: color.withValues(alpha: 0.8),
+                ),
               ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              subtitle,
-              style: TextStyle(
-                fontSize: 11,
-                color: color.withValues(alpha: 0.7),
+              const SizedBox(height: 4),
+              Text(
+                subtitle,
+                style: TextStyle(
+                  fontSize: 11,
+                  color: color.withValues(alpha: 0.7),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -626,7 +423,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     final icon = _getSpecializationIcon(name);
 
     return InkWell(
-      onTap: () => widget.onNavigate(1),
+      onTap: () => widget.onNavigate(1), // Navigate to Find Doctors
       borderRadius: BorderRadius.circular(16),
       child: Container(
         width: 100,
@@ -635,34 +432,20 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
           color: color.withValues(alpha: 0.1),
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: color.withValues(alpha: 0.3)),
-          boxShadow: [
-            BoxShadow(
-              color: color.withValues(alpha: 0.1),
-              blurRadius: 4,
-              offset: const Offset(0, 2),
-            ),
-          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.2),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 24),
-            ),
+            Icon(icon, color: color, size: 32),
             const SizedBox(height: 8),
             Text(
               name,
-              textAlign: TextAlign.center,
               style: TextStyle(
-                fontSize: 10,
-                fontWeight: FontWeight.bold,
-                color: color.withValues(alpha: 0.8),
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                color: color,
               ),
+              textAlign: TextAlign.center,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
             ),
@@ -744,6 +527,3 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     }
   }
 }
-
-
-//

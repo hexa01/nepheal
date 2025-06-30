@@ -35,6 +35,7 @@ class PaymentController extends BaseController
                 'status' => $payment->status,
                 'payment_method' => $payment->payment_method,
                 'created_at' => $payment->created_at,
+                'updated_at' => $payment->updated_at,
                 'appointment' => [
                     'id' => $payment->appointment->id,
                     'date' => $payment->appointment->appointment_date,

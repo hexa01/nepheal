@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/services/api_service.dart';
-import '../../../shared/models/payment.dart';
-import 'payment_screen.dart';
 
 class PaymentHistoryScreen extends StatefulWidget {
   const PaymentHistoryScreen({super.key});
@@ -14,7 +12,7 @@ class PaymentHistoryScreen extends StatefulWidget {
 class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   bool _isLoading = true;
   String? _error;
-  List<Payment> _payments = [];
+  List<Map<String, dynamic>> _paidPayments = []; // Store as Map like v12
 
   @override
   void initState() {
@@ -23,6 +21,8 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   }
 
   Future<void> _loadPayments() async {
+    if (!mounted) return;
+
     setState(() {
       _isLoading = true;
       _error = null;
@@ -31,11 +31,24 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     try {
       final response = await ApiService.getPayments();
 
+      if (!mounted) return;
+
       if (response['success']) {
-        final paymentsData = response['data'] as List<dynamic>;
+        final paymentsData = response['data'] as List<dynamic>? ?? [];
+        
+        // ✅ Filter to only include paid payments using the v12 logic
+        final allPayments = paymentsData
+            .map((data) => Map<String, dynamic>.from(data))
+            .toList();
+        
+        // Filter for only paid payments
+        final paidOnly = allPayments.where((payment) {
+          final status = payment['status'] ?? '';
+          return status == 'paid';
+        }).toList();
+        
         setState(() {
-          _payments =
-              paymentsData.map((data) => Payment.fromJson(data)).toList();
+          _paidPayments = paidOnly;
         });
       } else {
         setState(() {
@@ -43,189 +56,190 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         });
       }
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
+      if (mounted) {
+        setState(() {
+          _error = 'Connection error. Please check your internet connection.';
+        });
+      }
     } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
         title: const Text('Payment History'),
-        backgroundColor: Colors.blue.shade600,
+        backgroundColor: Colors.green.shade600,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildErrorState()
-              : _payments.isEmpty
-                  ? _buildEmptyState()
-                  : _buildPaymentsList(),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.green),
+              )
+            : _error != null
+                ? _buildErrorState()
+                : _paidPayments.isEmpty
+                    ? _buildEmptyState()
+                    : _buildPaymentsList(),
+      ),
     );
   }
 
   Widget _buildErrorState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error, size: 64, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(
-            _error!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadPayments,
-            child: const Text('Retry'),
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'Something went wrong',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _error!,
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
+            ),
+            const SizedBox(height: 16),
+            ElevatedButton(
+              onPressed: _loadPayments,
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green.shade600,
+                foregroundColor: Colors.white,
+              ),
+              child: const Text('Try Again'),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildEmptyState() {
     return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(Icons.payment, size: 64, color: Colors.grey.shade400),
-          const SizedBox(height: 16),
-          Text(
-            'No payments found',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w500,
-              color: Colors.grey.shade600,
+      child: Padding(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.receipt_long, size: 64, color: Colors.grey.shade400),
+            const SizedBox(height: 16),
+            Text(
+              'No Payments Yet',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w600,
+                color: Colors.grey.shade700,
+              ),
             ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            'Your payment history will appear here',
-            style: TextStyle(
-              color: Colors.grey.shade500,
+            const SizedBox(height: 8),
+            Text(
+              'Your payment history will appear here',
+              textAlign: TextAlign.center,
+              style: TextStyle(color: Colors.grey.shade600),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildPaymentsList() {
-    // Group payments by status
-    final paidPayments = _payments.where((p) => p.isPaid).toList();
-    final pendingPayments = _payments.where((p) => p.isPending).toList();
-
     return RefreshIndicator(
       onRefresh: _loadPayments,
-      child: ListView(
+      color: Colors.green,
+      child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        children: [
-          // Summary cards
-          _buildSummaryCards(paidPayments, pendingPayments),
-          const SizedBox(height: 24),
-
-          // Pending payments section
-          if (pendingPayments.isNotEmpty) ...[
-            _buildSectionHeader(
-                'Pending Payments', pendingPayments.length, Colors.orange),
-            const SizedBox(height: 12),
-            ...pendingPayments.map((payment) => _buildPaymentCard(payment)),
-            const SizedBox(height: 24),
-          ],
-
-          // Paid payments section
-          if (paidPayments.isNotEmpty) ...[
-            _buildSectionHeader(
-                'Paid Payments', paidPayments.length, Colors.green),
-            const SizedBox(height: 12),
-            ...paidPayments.map((payment) => _buildPaymentCard(payment)),
-          ],
-        ],
+        itemCount: _paidPayments.length + 1,
+        itemBuilder: (context, index) {
+          if (index == 0) {
+            return _buildSummaryCard();
+          } else {
+            final payment = _paidPayments[index - 1];
+            return _buildCompactPaymentCard(payment);
+          }
+        },
       ),
     );
   }
 
-  Widget _buildSummaryCards(
-      List<Payment> paidPayments, List<Payment> pendingPayments) {
-    final totalPaid =
-        paidPayments.fold<double>(0, (sum, payment) => sum + payment.amount);
-    final totalPending =
-        pendingPayments.fold<double>(0, (sum, payment) => sum + payment.amount);
-
-    return Row(
-      children: [
-        Expanded(
-          child: _buildSummaryCard(
-            'Total Paid',
-            'Rs. ${totalPaid.toStringAsFixed(0)}',
-            paidPayments.length.toString(),
-            Colors.green,
-            Icons.check_circle,
-          ),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: _buildSummaryCard(
-            'Pending',
-            'Rs. ${totalPending.toStringAsFixed(0)}',
-            pendingPayments.length.toString(),
-            Colors.orange,
-            Icons.schedule,
-          ),
-        ),
-      ],
+  Widget _buildSummaryCard() {
+    final totalAmount = _paidPayments.fold<double>(
+      0,
+      (sum, payment) => sum + ((payment['amount'] as num?)?.toDouble() ?? 0),
     );
-  }
 
-  Widget _buildSummaryCard(
-      String title, String amount, String count, Color color, IconData icon) {
     return Card(
+      margin: const EdgeInsets.only(bottom: 16),
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+      child: Container(
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(12),
+          gradient: LinearGradient(
+            colors: [Colors.green.shade600, Colors.green.shade500],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+        ),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(icon, color: color, size: 20),
+                Container(
+                  padding: const EdgeInsets.all(6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.account_balance_wallet, 
+                       color: Colors.white, size: 20),
+                ),
                 const SizedBox(width: 8),
-                Text(
-                  title,
+                const Text(
+                  'Total Paid',
                   style: TextStyle(
-                    color: Colors.grey.shade600,
-                    fontSize: 14,
+                    color: Colors.white,
+                    fontSize: 16,
                     fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
+            const SizedBox(height: 12),
             Text(
-              amount,
-              style: TextStyle(
-                fontSize: 18,
+              'Rs. ${totalAmount.toStringAsFixed(0)}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 28,
                 fontWeight: FontWeight.bold,
-                color: color,
               ),
             ),
             const SizedBox(height: 4),
             Text(
-              '$count ${count == '1' ? 'payment' : 'payments'}',
-              style: TextStyle(
-                color: Colors.grey.shade500,
-                fontSize: 12,
+              '${_paidPayments.length} payment${_paidPayments.length == 1 ? '' : 's'}',
+              style: const TextStyle(
+                color: Colors.white70,
+                fontSize: 13,
               ),
             ),
           ],
@@ -234,236 +248,195 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title, int count, Color color) {
-    return Row(
-      children: [
-        Container(
-          width: 4,
-          height: 20,
-          decoration: BoxDecoration(
-            color: color,
-            borderRadius: BorderRadius.circular(2),
-          ),
-        ),
-        const SizedBox(width: 12),
-        Text(
-          title,
-          style: const TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Container(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Text(
-            count.toString(),
-            style: TextStyle(
-              color: color,
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
+  Widget _buildCompactPaymentCard(Map<String, dynamic> payment) {
+    try {
+      final amount = (payment['amount'] as num?)?.toDouble() ?? 0;
+      final paymentMethod = payment['payment_method'] ?? 'Payment Method';
+      final updatedAt = payment['updated_at'];
 
-  Widget _buildPaymentCard(Payment payment) {
-    final statusColor = payment.isPaid ? Colors.green : Colors.orange;
-    final statusIcon = payment.isPaid ? Icons.check_circle : Icons.schedule;
+      // Get appointment info if available
+      final appointment = payment['appointment'] as Map<String, dynamic>?;
+      
+      String? doctorName;
+      String? doctorSpecialization;
+      
+      if (appointment != null) {
+        final doctor = appointment['doctor'] as Map<String, dynamic>?;
+        
+        if (doctor != null) {
+          doctorName = doctor['name']?.toString();
+          
+          // ✅ FIXED: Extract specialization name from the object
+          final specializationObj = doctor['specialization'] as Map<String, dynamic>?;
+          if (specializationObj != null) {
+            doctorSpecialization = specializationObj['name']?.toString();
+          }
+        }
+      }
 
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 1,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header with status and amount
-            Row(
-              children: [
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: statusColor.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(statusIcon, size: 14, color: statusColor),
-                      const SizedBox(width: 4),
+      return Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        elevation: 1,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Row(
+            children: [
+              // Payment Icon
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.check_circle,
+                  color: Colors.green.shade600,
+                  size: 20,
+                ),
+              ),
+              
+              const SizedBox(width: 12),
+              
+              // Payment Details
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Rs. ${amount.toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.black87,
+                          ),
+                        ),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: Colors.green.shade100,
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: Text(
+                            'PAID',
+                            style: TextStyle(
+                              color: Colors.green.shade700,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    
+                    const SizedBox(height: 4),
+                    
+                    // Doctor or Appointment Info
+                    if (doctorName != null && doctorName.isNotEmpty)
                       Text(
-                        payment.statusDisplay,
+                        'Dr. $doctorName${doctorSpecialization != null ? ' • $doctorSpecialization' : ''}',
                         style: TextStyle(
-                          color: statusColor,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      )
+                    else
+                      Text(
+                        'Appointment #${payment['appointment_id'] ?? 'N/A'}',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: Colors.grey.shade700,
+                          fontWeight: FontWeight.w500,
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const Spacer(),
-                Text(
-                  payment.formattedAmount,
-                  style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: statusColor,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-
-            // Appointment details
-            if (payment.appointment != null) ...[
-              Row(
-                children: [
-                  Icon(Icons.medical_services,
-                      size: 16, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      payment.appointment!.doctor?.name ?? 'Unknown Doctor',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 15,
-                      ),
+                    
+                    const SizedBox(height: 2),
+                    
+                    // Payment Method and Date
+                    Row(
+                      children: [
+                        Icon(Icons.payment, size: 12, color: Colors.grey.shade500),
+                        const SizedBox(width: 4),
+                        Text(
+                          paymentMethod.toUpperCase(),
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: Colors.grey.shade500,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        if (updatedAt != null) ...[
+                          Text(
+                            ' • ${_formatDate(updatedAt.toString())}',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade500,
+                            ),
+                          ),
+                        ],
+                      ],
                     ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 4),
-              Row(
-                children: [
-                  Icon(Icons.calendar_today,
-                      size: 14, color: Colors.grey.shade600),
-                  const SizedBox(width: 8),
-                  Text(
-                    _formatDate(payment.appointment!.date),
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                  const SizedBox(width: 16),
-                  Icon(Icons.access_time,
-                      size: 14, color: Colors.grey.shade600),
-                  const SizedBox(width: 4),
-                  Text(
-                    _formatTime(payment.appointment!.slot),
-                    style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                  ),
-                ],
-              ),
-            ],
-
-            // Payment details
-            const SizedBox(height: 8),
-            Row(
-              children: [
-                Icon(Icons.payment, size: 14, color: Colors.grey.shade600),
-                const SizedBox(width: 8),
-                Text(
-                  payment.paymentMethod != null
-                      ? payment.paymentMethod!.toUpperCase()
-                      : 'Payment Method',
-                  style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-                ),
-                const Spacer(),
-                Text(
-                  _formatDateTime(payment.createdAt),
-                  style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
-                ),
-              ],
-            ),
-
-            // Action buttons for pending payments
-            if (payment.isPending) ...[
-              const SizedBox(height: 12),
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton.icon(
-                  onPressed: () => _retryPayment(payment),
-                  icon: const Icon(Icons.payment, size: 18),
-                  label: const Text('Pay Now'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    padding: const EdgeInsets.symmetric(vertical: 10),
-                  ),
+                  ],
                 ),
               ),
             ],
-          ],
-        ),
-      ),
-    );
-  }
-
-  Future<void> _retryPayment(Payment payment) async {
-    if (payment.appointment == null) return;
-
-    final result = await Navigator.of(context).push<bool>(
-      MaterialPageRoute(
-        builder: (context) => PaymentScreen(
-          appointmentId: payment.appointmentId,
-          amount: payment.amount,
-          doctorName: payment.appointment!.doctor?.name ?? 'Unknown Doctor',
-          appointmentDate: payment.appointment!.date,
-          appointmentSlot: payment.appointment!.slot,
-        ),
-      ),
-    );
-
-    if (result == true) {
-      await _loadPayments();
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Payment completed successfully!'),
-            backgroundColor: Colors.green,
           ),
-        );
-      }
+        ),
+      );
+    } catch (e) {
+      return Card(
+        margin: const EdgeInsets.only(bottom: 8),
+        child: Padding(
+          padding: const EdgeInsets.all(12),
+          child: Text(
+            'Error loading payment: $e',
+            style: TextStyle(color: Colors.red.shade600),
+          ),
+        ),
+      );
     }
   }
 
   String _formatDate(String dateStr) {
     try {
       final date = DateTime.parse(dateStr);
-      return DateFormat('MMM dd, yyyy').format(date);
+      return DateFormat('MMM dd').format(date);
     } catch (e) {
       return dateStr;
     }
   }
 
-  String _formatTime(String time24) {
+  String _formatTime(String timeStr) {
     try {
-      String timeStr = time24.trim();
-      if (timeStr.contains(':') && timeStr.split(':').length == 3) {
-        final parts = timeStr.split(':');
-        timeStr = '${parts[0]}:${parts[1]}';
-      }
-      final time = DateFormat('HH:mm').parse(timeStr);
-      return DateFormat('h:mm a').format(time);
+      final time = DateFormat('HH:mm:ss').parse(timeStr);
+      return DateFormat('hh:mm a').format(time);
     } catch (e) {
-      return time24;
+      return timeStr;
     }
   }
 
-  String _formatDateTime(DateTime? dateTime) {
-    if (dateTime == null) return '';
-    return DateFormat('MMM dd, yyyy').format(dateTime);
+  String _formatDateTime(String dateTimeStr) {
+    try {
+      final dateTime = DateTime.parse(dateTimeStr);
+      return DateFormat('MMM dd, yyyy • hh:mm a').format(dateTime);
+    } catch (e) {
+      return dateTimeStr;
+    }
+  }
+
+  String _formatDateOnly(String dateStr) {
+    try {
+      final date = DateTime.parse(dateStr);
+      return DateFormat('MMM dd, yyyy').format(date);
+    } catch (e) {
+      return dateStr;
+    }
   }
 }
