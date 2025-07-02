@@ -14,7 +14,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   List<Schedule> _schedules = [];
   Map<String, bool> _dayHasAppointments = {};
   bool _isLoading = true;
-  bool _isUpdating = false;
   String? _error;
   String? _updatingDay;
 
@@ -122,7 +121,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
 
   Future<void> _toggleStatus(String day) async {
     setState(() {
-      _isUpdating = true;
       _updatingDay = day;
     });
 
@@ -170,7 +168,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
       );
     } finally {
       setState(() {
-        _isUpdating = false;
         _updatingDay = null;
       });
     }
@@ -631,7 +628,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   Future<void> _updateSchedule(
       String day, String startTime, String endTime) async {
     setState(() {
-      _isUpdating = true;
       _updatingDay = day;
     });
 
@@ -692,7 +688,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
       }
     } finally {
       setState(() {
-        _isUpdating = false;
         _updatingDay = null;
       });
     }
