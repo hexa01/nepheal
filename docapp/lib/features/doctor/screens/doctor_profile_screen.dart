@@ -94,10 +94,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     return _totalReviews > 0 ? (_totalReviews * 1.2).round() : 0;
   }
 
-  void _updateUserPhoto(String? newPhotoUrl) {
-    // AuthService is already updated by ProfilePhotoScreen
-    // Consumer will handle the update automatically
-  }
 
   @override
   Widget build(BuildContext context) {

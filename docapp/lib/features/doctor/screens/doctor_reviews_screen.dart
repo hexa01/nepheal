@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/review.dart';
-import '../../../shared/widgets/rating_widget.dart';
 
 class DoctorReviewsScreen extends StatefulWidget {
   const DoctorReviewsScreen({super.key});
