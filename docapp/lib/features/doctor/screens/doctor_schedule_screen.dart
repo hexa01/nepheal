@@ -89,35 +89,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
     }
   }
 
-  Future<void> _checkAppointmentsForAllDays() async {
-    try {
-      final response = await ApiService.getDaysWithAppointments();
-
-      if (response['success']) {
-        final daysData = response['data'] as Map<String, dynamic>;
-        Map<String, bool> hasAppointments = {};
-
-        for (String day in _weekDays) {
-          final dayData = daysData[day] as Map<String, dynamic>?;
-          hasAppointments[day] = dayData?['has_appointments'] ?? false;
-        }
-
-        setState(() {
-          _dayHasAppointments = hasAppointments;
-        });
-      }
-    } catch (e) {
-      print('Error checking appointments: $e');
-      // If API fails, default to allowing all edits
-      Map<String, bool> defaultStatus = {};
-      for (String day in _weekDays) {
-        defaultStatus[day] = false;
-      }
-      setState(() {
-        _dayHasAppointments = defaultStatus;
-      });
-    }
-  }
 
   Future<void> _toggleStatus(String day) async {
     setState(() {
