@@ -3,7 +3,6 @@ import '../../../shared/services/api_service.dart';
 import '../../../shared/models/doctor.dart';
 import '../../../shared/models/review.dart';
 import '../../../shared/models/specialization.dart';
-import '../../../shared/widgets/rating_widget.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import 'book_appointment_screen.dart';
 import 'doctor_profile_screen.dart';
