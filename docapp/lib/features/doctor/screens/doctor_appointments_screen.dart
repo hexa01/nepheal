@@ -309,8 +309,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
 
   Widget _buildUpcomingTab(
       Map<String, List<Map<String, dynamic>>> separatedAppointments) {
-    final pendingCount = separatedAppointments['upcoming_pending']?.length ?? 0;
-    final bookedCount = separatedAppointments['upcoming_booked']?.length ?? 0;
 
     return Column(
       children: [
