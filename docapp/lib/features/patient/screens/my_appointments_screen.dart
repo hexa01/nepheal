@@ -32,7 +32,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     'missed': [],
   };
 
-  Map<String, dynamic> _stats = {};
 
   @override
   void initState() {
@@ -65,7 +64,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
         setState(() {
           _categorizedAppointments =
               ApiService.parseCategorizedAppointments(response);
-          _stats = data['summary'] ?? {};
         });
       } else {
         setState(() {
