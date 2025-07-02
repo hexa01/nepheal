@@ -647,14 +647,14 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                             children: [
                               Icon(
                                 _getSpecializationIcon(
-                                    doctor.specializationName ?? 'General'),
+                                    doctor.specializationName),
                                 size: 16,
                                 color: Colors.blue.shade700,
                               ),
                               const SizedBox(width: 6),
                               Flexible(
                                 child: Text(
-                                  doctor.specializationName ?? 'General',
+                                  doctor.specializationName,
                                   style: TextStyle(
                                     fontSize: 13,
                                     color: Colors.blue.shade700,
