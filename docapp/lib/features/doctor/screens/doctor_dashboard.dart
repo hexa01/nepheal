@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'doctor_appointments_screen.dart';
 import 'doctor_profile_screen.dart';
 import 'doctor_schedule_screen.dart';
-import 'doctor_reviews_screen.dart';
 import 'doctor_messages_screen.dart';
 import '../../../shared/widgets/exit_wrapper_widget.dart';
 
