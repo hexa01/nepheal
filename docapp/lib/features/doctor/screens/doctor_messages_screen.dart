@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../../../shared/models/message.dart';
 import '../../../shared/services/api_service.dart';
 import 'compose_message_screen.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class DoctorMessagesScreen extends StatefulWidget {
   const DoctorMessagesScreen({super.key});
@@ -33,11 +34,11 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
       });
 
       final response = await ApiService.getCompletedAppointments();
-      
+
       if (response['success'] == true) {
         final List<dynamic> data = response['data'] ?? [];
         final List<CompletedAppointment> appointments = [];
-        
+
         for (var json in data) {
           try {
             final appointment = CompletedAppointment.fromJson(json);
@@ -46,11 +47,12 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
             continue;
           }
         }
-        
+
         final Map<String, List<CompletedAppointment>> grouped = {};
         for (var appointment in appointments) {
           try {
-            final patientKey = '${appointment.patient.id}_${appointment.patient.name}';
+            final patientKey =
+                '${appointment.patient.id}_${appointment.patient.name}';
             if (!grouped.containsKey(patientKey)) {
               grouped[patientKey] = [];
             }
@@ -59,12 +61,13 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
             continue;
           }
         }
-        
+
         grouped.forEach((key, appointmentList) {
           try {
             appointmentList.sort((a, b) {
               try {
-                return DateTime.parse(b.appointmentDate).compareTo(DateTime.parse(a.appointmentDate));
+                return DateTime.parse(b.appointmentDate)
+                    .compareTo(DateTime.parse(a.appointmentDate));
               } catch (e) {
                 return 0;
               }
@@ -73,7 +76,7 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
             // Continue with unsorted list
           }
         });
-        
+
         setState(() {
           _appointments = appointments;
           _groupedAppointments = grouped;
@@ -106,19 +109,21 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Patient Messages'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _refreshAppointments,
-          ),
-        ],
+    return ExitWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Patient Messages'),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _refreshAppointments,
+            ),
+          ],
+        ),
+        body: _buildBody(),
       ),
-      body: _buildBody(),
     );
   }
 
@@ -218,22 +223,20 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
           final patientAppointments = _groupedAppointments[patientKey]!;
           final patient = patientAppointments.first.patient;
           final isExpanded = _expandedPatients.contains(patientKey);
-          
-          return _buildPatientCard(patientKey, patient, patientAppointments, isExpanded);
+
+          return _buildPatientCard(
+              patientKey, patient, patientAppointments, isExpanded);
         },
       ),
     );
   }
 
-  Widget _buildPatientCard(
-    String patientKey, 
-    PatientInfo patient, 
-    List<CompletedAppointment> appointments, 
-    bool isExpanded
-  ) {
-    final totalMessages = appointments.where((apt) => apt.hasMessage == true).length;
+  Widget _buildPatientCard(String patientKey, PatientInfo patient,
+      List<CompletedAppointment> appointments, bool isExpanded) {
+    final totalMessages =
+        appointments.where((apt) => apt.hasMessage == true).length;
     final totalAppointments = appointments.length;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 16),
       elevation: 3,
@@ -269,7 +272,6 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -302,7 +304,6 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
                       ],
                     ),
                   ),
-                  
                   Column(
                     children: [
                       Container(
@@ -335,7 +336,6 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
               ),
             ),
           ),
-          
           if (isExpanded) ...[
             const Divider(height: 1),
             Container(
@@ -352,9 +352,9 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
                     ),
                   ),
                   const SizedBox(height: 12),
-                  ...appointments.map((appointment) => 
-                    _buildAppointmentItem(appointment)
-                  ).toList(),
+                  ...appointments
+                      .map((appointment) => _buildAppointmentItem(appointment))
+                      .toList(),
                 ],
               ),
             ),
@@ -397,9 +397,7 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
               ],
             ),
           ),
-          
           const SizedBox(width: 12),
-          
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -456,7 +454,6 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
               ],
             ),
           ),
-          
           InkWell(
             onTap: () => _navigateToComposeMessage(appointment),
             child: Container(
@@ -502,9 +499,7 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
   String _getMessagePreview(String message) {
     try {
       if (message.isEmpty) return 'No message content';
-      return message.length > 50
-          ? '${message.substring(0, 50)}...'
-          : message;
+      return message.length > 50 ? '${message.substring(0, 50)}...' : message;
     } catch (e) {
       return 'Message preview unavailable';
     }
@@ -515,8 +510,18 @@ class _DoctorMessagesScreenState extends State<DoctorMessagesScreen> {
       if (dateString.isEmpty) return 'N/A';
       final date = DateTime.parse(dateString);
       final months = [
-        'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-        'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+        'Jan',
+        'Feb',
+        'Mar',
+        'Apr',
+        'May',
+        'Jun',
+        'Jul',
+        'Aug',
+        'Sep',
+        'Oct',
+        'Nov',
+        'Dec'
       ];
       return '${months[date.month - 1]} ${date.day}';
     } catch (e) {

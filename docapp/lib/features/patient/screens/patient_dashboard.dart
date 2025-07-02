@@ -4,7 +4,7 @@ import '../../../shared/models/specialization.dart';
 import 'doctors_list_screen.dart';
 import 'patient_profile_screen.dart';
 import 'my_appointments_screen.dart';
-import 'my_reviews_screen.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 import 'patient_messages_screen.dart';
 
 class PatientDashboard extends StatefulWidget {
@@ -30,43 +30,46 @@ class _PatientDashboardState extends State<PatientDashboard> {
         PatientHomeScreen(onNavigate: _changeTab),
         const DoctorsListScreen(),
         const MyAppointmentsScreen(),
-        const MyReviewsScreen(),
+        const PatientMessagesScreen(),
         const PatientProfileScreen(),
       ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: _currentIndex < _screens.length
-          ? _screens[_currentIndex]
-          : _screens[0],
-      bottomNavigationBar: Container(
-        decoration: BoxDecoration(
-          boxShadow: [
-            BoxShadow(
-              color: Colors.grey.withValues(alpha: 0.2),
-              blurRadius: 10,
-              offset: const Offset(0, -2),
-            ),
-          ],
-        ),
-        child: BottomNavigationBar(
-          type: BottomNavigationBarType.fixed,
-          currentIndex: _currentIndex,
-          onTap: _changeTab,
-          selectedItemColor: Colors.blue,
-          unselectedItemColor: Colors.grey,
-          selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
-          items: const [
-            BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.search), label: 'Find Doctors'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.calendar_today), label: 'Appointments'),
-            BottomNavigationBarItem(
-                icon: Icon(Icons.rate_review), label: 'Reviews'),
-            BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
-          ],
+    return ExitWrapper(
+      child: Scaffold(
+        body: _currentIndex < _screens.length
+            ? _screens[_currentIndex]
+            : _screens[0],
+        bottomNavigationBar: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.grey.withValues(alpha: 0.2),
+                blurRadius: 10,
+                offset: const Offset(0, -2),
+              ),
+            ],
+          ),
+          child: BottomNavigationBar(
+            type: BottomNavigationBarType.fixed,
+            currentIndex: _currentIndex,
+            onTap: _changeTab,
+            selectedItemColor: Colors.blue,
+            unselectedItemColor: Colors.grey,
+            selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
+            items: const [
+              BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.search), label: 'Find Doctors'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.calendar_today), label: 'Appointments'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.message), label: 'Messages'),
+              BottomNavigationBarItem(
+                  icon: Icon(Icons.person), label: 'Profile'),
+            ],
+          ),
         ),
       ),
     );

@@ -6,6 +6,7 @@ import '../../../shared/services/api_service.dart';
 import '../../../shared/models/doctor.dart';
 import 'payment_screen.dart';
 import 'my_appointments_screen.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
   final Doctor doctor;
@@ -26,90 +27,92 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Book Appointment'),
-        backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Doctor info card
-            _buildDoctorCard(),
-            const SizedBox(height: 24),
-
-            // Date selection
-            _buildDateSelection(),
-            const SizedBox(height: 24),
-
-            // Time slots
-            if (_selectedDate != null) ...[
-              _buildTimeSlotSelection(),
+    return ExitWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Book Appointment'),
+          backgroundColor: Colors.blue.shade600,
+          foregroundColor: Colors.white,
+        ),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Doctor info card
+              _buildDoctorCard(),
               const SizedBox(height: 24),
-            ],
 
-            // Error message
-            if (_error != null) ...[
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.red.shade50,
-                  borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: Colors.red.shade200),
-                ),
-                child: Row(
-                  children: [
-                    Icon(Icons.error, color: Colors.red.shade700),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        _error!,
-                        style: TextStyle(color: Colors.red.shade700),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              // Date selection
+              _buildDateSelection(),
               const SizedBox(height: 24),
-            ],
 
-            // Book appointment button
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: _selectedDate != null &&
-                        _selectedSlot != null &&
-                        !_isBooking
-                    ? _bookAppointment
-                    : null,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade600,
-                  foregroundColor: Colors.white,
-                  padding: const EdgeInsets.symmetric(vertical: 16),
-                  shape: RoundedRectangleBorder(
+              // Time slots
+              if (_selectedDate != null) ...[
+                _buildTimeSlotSelection(),
+                const SizedBox(height: 24),
+              ],
+
+              // Error message
+              if (_error != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
                     borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.error, color: Colors.red.shade700),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _error!,
+                          style: TextStyle(color: Colors.red.shade700),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: _isBooking
-                    ? const SizedBox(
-                        height: 20,
-                        width: 20,
-                        child: CircularProgressIndicator(
-                          color: Colors.white,
-                          strokeWidth: 2,
+                const SizedBox(height: 24),
+              ],
+
+              // Book appointment button
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _selectedDate != null &&
+                          _selectedSlot != null &&
+                          !_isBooking
+                      ? _bookAppointment
+                      : null,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.blue.shade600,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                  child: _isBooking
+                      ? const SizedBox(
+                          height: 20,
+                          width: 20,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
+                      : const Text(
+                          'Book Appointment',
+                          style: TextStyle(
+                              fontSize: 16, fontWeight: FontWeight.w600),
                         ),
-                      )
-                    : const Text(
-                        'Book Appointment',
-                        style: TextStyle(
-                            fontSize: 16, fontWeight: FontWeight.w600),
-                      ),
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -490,11 +493,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             duration: Duration(seconds: 3),
           ),
         );
-        
+
         // Navigate to MyAppointments screen and switch to booked tab
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const MyAppointmentsScreen(initialTabIndex: 1), // 1 = booked tab
+            builder: (context) => const MyAppointmentsScreen(
+                initialTabIndex: 1), // 1 = booked tab
           ),
         );
       } else if (mounted) {
@@ -507,11 +511,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             duration: Duration(seconds: 3),
           ),
         );
-        
+
         // Navigate to MyAppointments screen and switch to pending tab
         Navigator.of(context).pushReplacement(
           MaterialPageRoute(
-            builder: (context) => const MyAppointmentsScreen(initialTabIndex: 0), // 0 = pending tab
+            builder: (context) => const MyAppointmentsScreen(
+                initialTabIndex: 0), // 0 = pending tab
           ),
         );
       }
@@ -524,11 +529,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           duration: Duration(seconds: 3),
         ),
       );
-      
+
       // Navigate to MyAppointments screen and switch to pending tab
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
-          builder: (context) => const MyAppointmentsScreen(initialTabIndex: 0), // 0 = pending tab
+          builder: (context) =>
+              const MyAppointmentsScreen(initialTabIndex: 0), // 0 = pending tab
         ),
       );
     }

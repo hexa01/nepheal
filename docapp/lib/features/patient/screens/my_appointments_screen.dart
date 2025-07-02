@@ -10,6 +10,7 @@ import '../../../shared/models/review.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import 'create_review_screen.dart';
 import 'my_reviews_screen.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
   final int initialTabIndex;
@@ -86,65 +87,67 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Appointments'),
-        backgroundColor: Colors.blue.shade600,
-        foregroundColor: Colors.white,
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          tabs: [
-            Tab(
-              text: 'Pending',
-              icon: Badge(
-                label:
-                    Text('${_categorizedAppointments['pending']?.length ?? 0}'),
-                child: const Icon(Icons.schedule),
-              ),
-            ),
-            Tab(
-              text: 'Booked',
-              icon: Badge(
-                label:
-                    Text('${_categorizedAppointments['booked']?.length ?? 0}'),
-                child: const Icon(Icons.check_circle),
-              ),
-            ),
-            Tab(
-              text: 'Completed',
-              icon: Badge(
-                label: Text(
-                    '${_categorizedAppointments['completed']?.length ?? 0}'),
-                child: const Icon(Icons.check_circle_outline),
-              ),
-            ),
-            Tab(
-              text: 'Missed',
-              icon: Badge(
-                label:
-                    Text('${_categorizedAppointments['missed']?.length ?? 0}'),
-                child: const Icon(Icons.cancel),
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildErrorState()
-              : TabBarView(
-                  controller: _tabController,
-                  children: [
-                    _buildAppointmentsList('pending'),
-                    _buildAppointmentsList('booked'),
-                    _buildAppointmentsList('completed'),
-                    _buildAppointmentsList('missed'),
-                  ],
+    return ExitWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('My Appointments'),
+          backgroundColor: Colors.blue.shade600,
+          foregroundColor: Colors.white,
+          bottom: TabBar(
+            controller: _tabController,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+            tabs: [
+              Tab(
+                text: 'Pending',
+                icon: Badge(
+                  label: Text(
+                      '${_categorizedAppointments['pending']?.length ?? 0}'),
+                  child: const Icon(Icons.schedule),
                 ),
+              ),
+              Tab(
+                text: 'Booked',
+                icon: Badge(
+                  label: Text(
+                      '${_categorizedAppointments['booked']?.length ?? 0}'),
+                  child: const Icon(Icons.check_circle),
+                ),
+              ),
+              Tab(
+                text: 'Completed',
+                icon: Badge(
+                  label: Text(
+                      '${_categorizedAppointments['completed']?.length ?? 0}'),
+                  child: const Icon(Icons.check_circle_outline),
+                ),
+              ),
+              Tab(
+                text: 'Missed',
+                icon: Badge(
+                  label: Text(
+                      '${_categorizedAppointments['missed']?.length ?? 0}'),
+                  child: const Icon(Icons.cancel),
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _buildErrorState()
+                : TabBarView(
+                    controller: _tabController,
+                    children: [
+                      _buildAppointmentsList('pending'),
+                      _buildAppointmentsList('booked'),
+                      _buildAppointmentsList('completed'),
+                      _buildAppointmentsList('missed'),
+                    ],
+                  ),
+      ),
     );
   }
 

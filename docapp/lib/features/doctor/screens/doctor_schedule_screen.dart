@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/schedule.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class DoctorScheduleScreen extends StatefulWidget {
   const DoctorScheduleScreen({super.key});
@@ -52,14 +53,18 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
 
       if (scheduleResponse['success']) {
         final scheduleData = scheduleResponse['data'] as List;
-        _schedules = scheduleData.map((json) => Schedule.fromJson(json)).toList();
+        _schedules =
+            scheduleData.map((json) => Schedule.fromJson(json)).toList();
 
         // Sort schedules by day order
         _schedules.sort((a, b) {
-          return _weekDays.indexOf(a.fullDayName).compareTo(_weekDays.indexOf(b.fullDayName));
+          return _weekDays
+              .indexOf(a.fullDayName)
+              .compareTo(_weekDays.indexOf(b.fullDayName));
         });
       } else {
-        throw Exception(scheduleResponse['message'] ?? 'Failed to load schedule');
+        throw Exception(
+            scheduleResponse['message'] ?? 'Failed to load schedule');
       }
 
       if (appointmentsResponse['success']) {
@@ -74,7 +79,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
         // If appointments API fails, default to no appointments
         _dayHasAppointments = {for (var day in _weekDays) day: false};
       }
-
     } catch (e) {
       _error = 'Error: ${e.toString()}';
     } finally {
@@ -174,32 +178,34 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text(
-          'My Schedule',
-          style: TextStyle(fontWeight: FontWeight.w600),
-        ),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _isLoading ? null : _loadSchedule,
-            tooltip: 'Refresh Schedule',
+    return ExitWrapper(
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text(
+            'My Schedule',
+            style: TextStyle(fontWeight: FontWeight.w600),
           ),
-        ],
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.refresh),
+              onPressed: _isLoading ? null : _loadSchedule,
+              tooltip: 'Refresh Schedule',
+            ),
+          ],
+        ),
+        body: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _error != null
+                ? _buildErrorState()
+                : RefreshIndicator(
+                    onRefresh: _loadSchedule,
+                    child: _buildScheduleContent(),
+                  ),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? _buildErrorState()
-              : RefreshIndicator(
-                  onRefresh: _loadSchedule,
-                  child: _buildScheduleContent(),
-                ),
     );
   }
 
@@ -349,9 +355,8 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
         color: Colors.white,
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hasAppointments
-              ? Colors.orange.shade200
-              : Colors.green.shade200,
+          color:
+              hasAppointments ? Colors.orange.shade200 : Colors.green.shade200,
           width: 1,
         ),
         boxShadow: [
@@ -478,7 +483,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
                         ],
                       ),
                     ),
-                    
+
                     // Slots Badge
                     Container(
                       padding: const EdgeInsets.symmetric(
@@ -783,8 +788,8 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
                   // Start Time
                   Row(
                     children: [
-                      Icon(Icons.access_time, 
-                           color: Colors.green.shade600, size: 20),
+                      Icon(Icons.access_time,
+                          color: Colors.green.shade600, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -817,7 +822,8 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: Text(
                                   _startTime.format(context),
@@ -833,14 +839,14 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 16),
-                  
+
                   // End Time
                   Row(
                     children: [
-                      Icon(Icons.access_time_filled, 
-                           color: Colors.red.shade600, size: 20),
+                      Icon(Icons.access_time_filled,
+                          color: Colors.red.shade600, size: 20),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -873,7 +879,8 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
                                 decoration: BoxDecoration(
                                   color: Colors.white,
                                   borderRadius: BorderRadius.circular(8),
-                                  border: Border.all(color: Colors.grey.shade300),
+                                  border:
+                                      Border.all(color: Colors.grey.shade300),
                                 ),
                                 child: Text(
                                   _endTime.format(context),
@@ -905,8 +912,8 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
               ),
               child: Row(
                 children: [
-                  Icon(Icons.event_available, 
-                       color: Colors.blue.shade600, size: 20),
+                  Icon(Icons.event_available,
+                      color: Colors.blue.shade600, size: 20),
                   const SizedBox(width: 8),
                   Text(
                     'Available Slots: ${_calculateSlots()}',
@@ -932,8 +939,8 @@ class _ScheduleEditDialogState extends State<_ScheduleEditDialog> {
                 ),
                 child: Row(
                   children: [
-                    Icon(Icons.error_outline, 
-                         color: Colors.red.shade600, size: 20),
+                    Icon(Icons.error_outline,
+                        color: Colors.red.shade600, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(

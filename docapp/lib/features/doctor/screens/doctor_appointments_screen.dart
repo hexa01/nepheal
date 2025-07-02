@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class DoctorAppointmentsScreen extends StatefulWidget {
   final int? initialTabIndex;
@@ -232,80 +233,82 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
         separatedAppointments['past_completed']?.length ?? 0;
     final pastMissedCount = separatedAppointments['past_missed']?.length ?? 0;
 
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text('My Appointments'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Colors.green, Colors.green.shade500],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+    return ExitWrapper(
+      child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text('My Appointments'),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.green, Colors.green.shade500],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
           ),
-        ),
-        bottom: TabBar(
-          controller: _mainTabController,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white70,
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          tabs: [
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Badge(
-                    label:
-                        Text('${upcomingPendingCount + upcomingBookedCount}'),
-                    child: const Icon(Icons.schedule, size: 20),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('Upcoming', style: TextStyle(fontSize: 14)),
-                ],
-              ),
-            ),
-            Tab(
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Badge(
-                    label: Text(
-                        '${pastToUpdateCount + pastCompletedCount + pastMissedCount}'),
-                    child: const Icon(Icons.history, size: 20),
-                  ),
-                  const SizedBox(width: 8),
-                  const Text('Past', style: TextStyle(fontSize: 14)),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator(color: Colors.green))
-          : _error != null
-              ? _buildErrorState()
-              : Column(
+          bottom: TabBar(
+            controller: _mainTabController,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            indicatorColor: Colors.white,
+            indicatorWeight: 3,
+            tabs: [
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Expanded(
-                      child: TabBarView(
-                        controller: _mainTabController,
-                        children: [
-                          _buildUpcomingTab(separatedAppointments),
-                          _buildPastTab(separatedAppointments),
-                        ],
-                      ),
+                    Badge(
+                      label:
+                          Text('${upcomingPendingCount + upcomingBookedCount}'),
+                      child: const Icon(Icons.schedule, size: 20),
                     ),
+                    const SizedBox(width: 8),
+                    const Text('Upcoming', style: TextStyle(fontSize: 14)),
                   ],
                 ),
+              ),
+              Tab(
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Badge(
+                      label: Text(
+                          '${pastToUpdateCount + pastCompletedCount + pastMissedCount}'),
+                      child: const Icon(Icons.history, size: 20),
+                    ),
+                    const SizedBox(width: 8),
+                    const Text('Past', style: TextStyle(fontSize: 14)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+        body: _isLoading
+            ? const Center(
+                child: CircularProgressIndicator(color: Colors.green))
+            : _error != null
+                ? _buildErrorState()
+                : Column(
+                    children: [
+                      Expanded(
+                        child: TabBarView(
+                          controller: _mainTabController,
+                          children: [
+                            _buildUpcomingTab(separatedAppointments),
+                            _buildPastTab(separatedAppointments),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+      ),
     );
   }
-
 
   Widget _buildUpcomingTab(
       Map<String, List<Map<String, dynamic>>> separatedAppointments) {
@@ -329,9 +332,9 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                   children: [
                     const Icon(Icons.pending_actions, size: 16),
                     const SizedBox(width: 4),
-                    Text('Pending (${separatedAppointments['upcoming_pending']?.length ?? 0})'),
+                    Text(
+                        'Pending (${separatedAppointments['upcoming_pending']?.length ?? 0})'),
                   ],
-
                 ),
               ),
               Tab(
@@ -340,7 +343,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                   children: [
                     const Icon(Icons.check_circle, size: 16),
                     const SizedBox(width: 4),
-                    Text('Booked (${separatedAppointments['upcoming_booked']?.length ?? 0})'),
+                    Text(
+                        'Booked (${separatedAppointments['upcoming_booked']?.length ?? 0})'),
                   ],
                 ),
               ),
@@ -393,7 +397,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                   children: [
                     Icon(Icons.update, size: 16, color: Colors.orange.shade600),
                     const SizedBox(width: 4),
-                    Text('To Update (${separatedAppointments['past_to_update']?.length ?? 0})'),
+                    Text(
+                        'To Update (${separatedAppointments['past_to_update']?.length ?? 0})'),
                   ],
                 ),
               ),
@@ -401,9 +406,11 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Icon(Icons.check_circle, size: 16, color: Colors.green.shade600),
+                    Icon(Icons.check_circle,
+                        size: 16, color: Colors.green.shade600),
                     const SizedBox(width: 4),
-                    Text('Completed (${separatedAppointments['past_completed']?.length ?? 0})'),
+                    Text(
+                        'Completed (${separatedAppointments['past_completed']?.length ?? 0})'),
                   ],
                 ),
               ),
@@ -413,7 +420,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                   children: [
                     Icon(Icons.cancel, size: 16, color: Colors.red.shade600),
                     const SizedBox(width: 4),
-                    Text('Missed (${separatedAppointments['past_missed']?.length ?? 0})'),
+                    Text(
+                        'Missed (${separatedAppointments['past_missed']?.length ?? 0})'),
                   ],
                 ),
               ),

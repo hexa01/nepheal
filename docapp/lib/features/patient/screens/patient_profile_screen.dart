@@ -6,7 +6,8 @@ import '../../auth/screens/login_screen.dart';
 import '../../../shared/screens/profile_photo_screen.dart';
 import '../../../shared/screens/edit_profile_screen.dart';
 import '../../../shared/screens/change_password_screen.dart';
-import 'payment_history_screen.dart'; // ✅ FIXED: Use the separate payment history file
+import 'payment_history_screen.dart'; 
+import 'my_reviews_screen.dart'; 
 
 class PatientProfileScreen extends StatefulWidget {
   const PatientProfileScreen({super.key});
@@ -18,7 +19,6 @@ class PatientProfileScreen extends StatefulWidget {
 class _PatientProfileScreenState extends State<PatientProfileScreen> {
   void _updateUserPhoto(String? newPhotoUrl) {
     // AuthService is already updated by ProfilePhotoScreen
-    // Consumer will handle the update automatically
   }
 
   void _showLogoutDialog(BuildContext context) {
@@ -218,6 +218,33 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
 
                       const SizedBox(height: 24),
 
+                      // My Activity Section
+                      const Text(
+                        'My Activity',
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      _buildActionButton(
+                        icon: Icons.rate_review,
+                        title: 'My Reviews',
+                        subtitle: 'View and manage your doctor reviews',
+                        color: Colors.purple,
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) => const MyReviewsScreen(),
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 24),
+
                       // Account Actions Section
                       const Text(
                         'Account Actions',
@@ -257,7 +284,6 @@ class _PatientProfileScreenState extends State<PatientProfileScreen> {
                         },
                       ),
 
-                      // ✅ Payment History Option
                       _buildActionButton(
                         icon: Icons.payment,
                         title: 'Payment History',

@@ -9,6 +9,7 @@ import '../../../shared/screens/profile_photo_screen.dart';
 import '../../../shared/screens/edit_profile_screen.dart';
 import '../../../shared/screens/change_password_screen.dart';
 import 'doctor_reviews_screen.dart';
+import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});
@@ -74,8 +75,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         setState(() {
           _averageRating = (statsData['average_rating'] ?? 0.0).toDouble();
           _totalReviews = statsData['total_reviews'] ?? 0;
-          _totalPatients =
-              _calculateTotalPatients(); 
+          _totalPatients = _calculateTotalPatients();
         });
       }
     } catch (e) {
@@ -101,37 +101,39 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Profile'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () => _showLogoutDialog(context),
-          ),
-        ],
-      ),
-      body: Consumer<AuthService>(
-        builder: (context, authService, child) {
-          final user = authService.user;
+    return ExitWrapper(
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('Profile'),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.logout),
+              onPressed: () => _showLogoutDialog(context),
+            ),
+          ],
+        ),
+        body: Consumer<AuthService>(
+          builder: (context, authService, child) {
+            final user = authService.user;
 
-          if (_isLoading) {
-            return const Center(child: CircularProgressIndicator());
-          }
+            if (_isLoading) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-          if (_error != null) {
-            return _buildErrorState();
-          }
+            if (_error != null) {
+              return _buildErrorState();
+            }
 
-          if (user == null) {
-            return const Center(child: Text('No user data available'));
-          }
+            if (user == null) {
+              return const Center(child: Text('No user data available'));
+            }
 
-          return _buildProfileContent(user);
-        },
+            return _buildProfileContent(user);
+          },
+        ),
       ),
     );
   }
