@@ -11,9 +11,9 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {
+class MyApp extends StatelessWidget {//statelesswidget
   const MyApp({super.key});
-
+//for overriding
   @override
   Widget build(BuildContext context) {
     return ChangeNotifierProvider(
