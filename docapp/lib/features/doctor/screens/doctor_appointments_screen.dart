@@ -30,7 +30,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     'missed': [],
   };
 
-  Map<String, dynamic> _stats = {};
   final ScrollController _scrollController = ScrollController();
 
   // Pagination for completed/missed appointments
@@ -81,7 +80,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
         setState(() {
           _categorizedAppointments =
               ApiService.parseCategorizedAppointments(response);
-          _stats = data['summary'] ?? {};
         });
       } else {
         setState(() {
