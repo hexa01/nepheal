@@ -57,11 +57,14 @@ class _PatientDashboardState extends State<PatientDashboard> {
             onTap: _changeTab,
             selectedItemColor: Colors.blue,
             unselectedItemColor: Colors.grey,
+            selectedFontSize: 10,
+            unselectedFontSize: 9,
+            iconSize: 20,
             selectedLabelStyle: const TextStyle(fontWeight: FontWeight.w600),
             items: const [
               BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
               BottomNavigationBarItem(
-                  icon: Icon(Icons.search), label: 'Find Doctors'),
+                  icon: Icon(Icons.search), label: 'Doctors'),
               BottomNavigationBarItem(
                   icon: Icon(Icons.calendar_today), label: 'Appointments'),
               BottomNavigationBarItem(
@@ -208,9 +211,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 1),
 
-                  // Quick Action Cards Grid (Back to 2x2 original layout)
+                  // Quick Action Cards Grid
                   GridView.count(
                     crossAxisCount: 2,
                     shrinkWrap: true,
@@ -251,6 +254,42 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   ),
 
                   const SizedBox(height: 32),
+
+                  // Medical Specializations Section
+                  const Text(
+                    'Medical Specializations',
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black87,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Specializations Horizontal List
+                  SizedBox(
+                    height: 100,
+                    child: _isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : _error != null
+                            ? _buildStaticSpecializationsList()
+                            : _specializations.isEmpty
+                                ? _buildStaticSpecializationsList()
+                                : ListView.builder(
+                                    scrollDirection: Axis.horizontal,
+                                    padding: const EdgeInsets.only(right: 8),
+                                    itemCount: _specializations.length,
+                                    itemBuilder: (context, index) {
+                                      return Padding(
+                                        padding:
+                                            const EdgeInsets.only(right: 10),
+                                        child: _buildSpecializationCard(
+                                            _specializations[index].name),
+                                      );
+                                    },
+                                  ),
+                  ),
+                  const SizedBox(height: 20),
 
                   // Health Tip Section
                   Container(
@@ -295,42 +334,6 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   ),
 
                   const SizedBox(height: 32),
-
-                  // Medical Specializations Section
-                  const Text(
-                    'Medical Specializations',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Specializations Horizontal List
-                  SizedBox(
-                    height: 120,
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _error != null
-                            ? _buildStaticSpecializationsList()
-                            : _specializations.isEmpty
-                                ? _buildStaticSpecializationsList()
-                                : ListView.builder(
-                                    scrollDirection: Axis.horizontal,
-                                    padding: const EdgeInsets.only(right: 8),
-                                    itemCount: _specializations.length,
-                                    itemBuilder: (context, index) {
-                                      return Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 12),
-                                        child: _buildSpecializationCard(
-                                            _specializations[index].name),
-                                      );
-                                    },
-                                  ),
-                  ),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
@@ -432,7 +435,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
       onTap: () => widget.onNavigate(1), // Navigate to Find Doctors
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        width: 100,
+        width: 90,
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: color.withValues(alpha: 0.1),
@@ -442,7 +445,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(icon, color: color, size: 32),
+            Icon(icon, color: color, size: 28),
             const SizedBox(height: 8),
             Text(
               name,
