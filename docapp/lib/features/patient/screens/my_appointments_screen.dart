@@ -5,11 +5,9 @@ import 'package:intl/intl.dart';
 import 'payment_screen.dart';
 import 'reschedule_appointment_screen.dart';
 import '../../../shared/services/api_service.dart';
-import '../../../shared/models/payment.dart';
 import '../../../shared/models/review.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import 'create_review_screen.dart';
-import 'my_reviews_screen.dart';
 import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
