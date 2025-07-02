@@ -28,9 +28,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   Doctor? _detailedDoctor;
   DoctorRatingStats? _ratingStats;
   List<Review> _recentReviews = [];
-  bool _isLoading = true;
   bool _isLoadingReviews = true;
-  String? _error;
 
   @override
   void initState() {
@@ -44,9 +42,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
   Future<void> _loadDoctorData() async {
     setState(() {
-      _isLoading = true;
       _isLoadingReviews = true;
-      _error = null;
     });
 
     try {
@@ -132,7 +128,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       print('Error loading doctor data: $e');
     } finally {
       setState(() {
-        _isLoading = false;
         _isLoadingReviews = false;
       });
     }
