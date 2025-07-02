@@ -16,4 +16,12 @@ class ApiConstants {
 
   //payments
   static const String payments = '$baseUrl/payments';
+
+  // Messages
+  static const String messages = '$baseUrl/messages';
+  static const String completedAppointments = '$baseUrl/messages/completed-appointments';
+  static const String sendMessage = '$baseUrl/messages/send';
+  static const String patientMessages = '$baseUrl/messages/patient-messages';
+
+
 }

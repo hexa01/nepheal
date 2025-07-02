@@ -775,6 +775,91 @@ class ApiService {
     };
   }
 
+  ///Messages
+
+  /// Get completed appointments for doctor to send messages
+  static Future<Map<String, dynamic>> getCompletedAppointments() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/messages/completed-appointments'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch completed appointments: $e');
+    }
+  }
+
+  /// Send message to patient
+  static Future<Map<String, dynamic>> sendMessage({
+    required int appointmentId,
+    required String doctorMessage,
+  }) async {
+    try {
+      final response = await http.post(
+        Uri.parse('${ApiConstants.baseUrl}/messages/send'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'appointment_id': appointmentId,
+          'doctor_message': doctorMessage,
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to send message: $e');
+    }
+  }
+
+  /// Update existing message
+  static Future<Map<String, dynamic>> updateMessage({
+    required int messageId,
+    required String doctorMessage,
+  }) async {
+    try {
+      final response = await http.put(
+        Uri.parse('${ApiConstants.baseUrl}/messages/$messageId'),
+        headers: _getHeaders(),
+        body: jsonEncode({
+          'doctor_message': doctorMessage,
+        }),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to update message: $e');
+    }
+  }
+
+  /// Delete message
+  static Future<Map<String, dynamic>> deleteMessage(int messageId) async {
+    try {
+      final response = await http.delete(
+        Uri.parse('${ApiConstants.baseUrl}/messages/$messageId'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to delete message: $e');
+    }
+  }
+
+  /// Get patient messages (for patient side)
+  static Future<Map<String, dynamic>> getPatientMessages() async {
+    try {
+      final response = await http.get(
+        Uri.parse('${ApiConstants.baseUrl}/messages/patient-messages'),
+        headers: _getHeaders(),
+      );
+
+      return _handleResponse(response);
+    } catch (e) {
+      throw Exception('Failed to fetch patient messages: $e');
+    }
+  }
+
   // Helper method to handle responses
   static Map<String, dynamic> _handleResponse(http.Response response) {
     final Map<String, dynamic> data = jsonDecode(response.body);

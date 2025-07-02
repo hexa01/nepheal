@@ -3,6 +3,7 @@
 use App\Http\Controllers\Api\v1\DoctorController;
 use App\Http\Controllers\Api\v1\AdminController;
 use App\Http\Controllers\Api\v1\AppointmentController;
+use App\Http\Controllers\Api\v1\MessageController;
 use App\Http\Controllers\Api\v1\PatientController;
 use App\Http\Controllers\Api\v1\PaymentController;
 use App\Http\Controllers\Api\v1\ProfilePhotoController;
@@ -92,6 +93,18 @@ Route::prefix('v1')->group(function () {
                 Route::put('/{reviewId}', [ReviewController::class, 'update'])->name('api.reviews.update'); // Update review
                 Route::delete('/{reviewId}', [ReviewController::class, 'destroy'])->name('api.reviews.delete'); // Delete review
             });
+        });
+
+
+        Route::prefix('messages')->group(function () {
+            // Doctor routes
+            Route::get('/completed-appointments', [MessageController::class, 'getCompletedAppointments']);
+            Route::post('/send', [MessageController::class, 'sendMessage']);
+            Route::put('/{messageId}', [MessageController::class, 'updateMessage']);
+            Route::delete('/{messageId}', [MessageController::class, 'deleteMessage']);
+
+            // Patient routes
+            Route::get('/patient-messages', [MessageController::class, 'getPatientMessages']);
         });
 
         Route::middleware('role:doctor')->group(function () {

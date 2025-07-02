@@ -1,8 +1,11 @@
+// features/doctor/screens/doctor_dashboard.dart
+
 import 'package:flutter/material.dart';
 import 'doctor_appointments_screen.dart';
 import 'doctor_profile_screen.dart';
 import 'doctor_schedule_screen.dart';
 import 'doctor_reviews_screen.dart';
+import 'doctor_messages_screen.dart';
 import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class DoctorDashboard extends StatefulWidget {
@@ -18,8 +21,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
   final List<Widget> _screens = [
     const DoctorHomeScreen(),
     const DoctorAppointmentsScreen(),
+    const DoctorMessagesScreen(),
     const DoctorScheduleScreen(),
-    const DoctorReviewsScreen(),
+    // const DoctorReviewsScreen(),
     const DoctorProfileScreen(),
   ];
 
@@ -37,9 +41,9 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
         },
         selectedItemColor: Colors.green,
         unselectedItemColor: Colors.grey,
-        selectedFontSize: 10, // Smaller font for 5 items
-        unselectedFontSize: 10,
-        iconSize: 22, // Smaller icons for 5 items
+        selectedFontSize: 10, // Smaller font for 6 items
+        unselectedFontSize: 9,
+        iconSize: 20, // Smaller icons for 6 items
         items: const [
           BottomNavigationBarItem(
             icon: Icon(Icons.home),
@@ -50,13 +54,17 @@ class _DoctorDashboardState extends State<DoctorDashboard> {
             label: 'Appointments',
           ),
           BottomNavigationBarItem(
+            icon: Icon(Icons.message),
+            label: 'Messages',
+          ),
+          BottomNavigationBarItem(
             icon: Icon(Icons.schedule),
             label: 'Schedule',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.rate_review),
-            label: 'Reviews',
-          ),
+          // BottomNavigationBarItem(
+          //   icon: Icon(Icons.rate_review),
+          //   label: 'Reviews',
+          // ),
           BottomNavigationBarItem(
             icon: Icon(Icons.person),
             label: 'Profile',
@@ -99,7 +107,8 @@ class DoctorHomeScreen extends StatelessWidget {
               ),
               SizedBox(height: 8),
               Text(
-                'Manage your appointments',
+                'Manage your appointments and communicate with patients',
+                textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: 16,
                   color: Colors.grey,

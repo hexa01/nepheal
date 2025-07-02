@@ -8,6 +8,7 @@ import '../../auth/screens/login_screen.dart';
 import '../../../shared/screens/profile_photo_screen.dart';
 import '../../../shared/screens/edit_profile_screen.dart';
 import '../../../shared/screens/change_password_screen.dart';
+import 'doctor_reviews_screen.dart';
 
 class DoctorProfileScreen extends StatefulWidget {
   const DoctorProfileScreen({super.key});
@@ -20,11 +21,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   bool _isLoading = false;
   String? _error;
   String? _doctorBio;
-  
+
   // ✅ ADD: Variables to store rating data
   double _averageRating = 0.0;
   int _totalReviews = 0;
-  int _totalPatients = 0; // This could be fetched from appointments if needed
+  int _totalPatients = 0;
 
   @override
   void initState() {
@@ -32,7 +33,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     _loadDoctorData();
   }
 
-  // ✅ UPDATED: Load doctor data including bio and rating
+  //Load doctor data including bio and rating
   Future<void> _loadDoctorData() async {
     setState(() {
       _isLoading = true;
@@ -44,12 +45,12 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       if (response['success']) {
         final doctorData = response['data']['doctor'];
         final doctorId = doctorData['doctor_id'];
-        
+
         setState(() {
           _doctorBio = doctorData['bio'] ?? '';
         });
 
-        // ✅ ADD: Fetch rating statistics
+        //Fetch rating statistics
         await _loadRatingStats(doctorId);
       }
     } catch (e) {
@@ -64,7 +65,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     }
   }
 
-  // ✅ ADD: Load rating statistics from the API
+  //Load rating statistics from the API
   Future<void> _loadRatingStats(int doctorId) async {
     try {
       final response = await ApiService.getDoctorRatingStats(doctorId);
@@ -73,8 +74,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         setState(() {
           _averageRating = (statsData['average_rating'] ?? 0.0).toDouble();
           _totalReviews = statsData['total_reviews'] ?? 0;
-          // You can also calculate total patients from completed appointments if needed
-          _totalPatients = _calculateTotalPatients(); // Placeholder - implement if needed
+          _totalPatients =
+              _calculateTotalPatients(); 
         });
       }
     } catch (e) {
@@ -87,7 +88,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     }
   }
 
-  // ✅ ADD: Calculate total patients (placeholder - implement based on your needs)
   int _calculateTotalPatients() {
     // This could be calculated from completed appointments
     // For now, return a reasonable estimate or fetch from API
@@ -272,13 +272,18 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       ),
                       _buildStatCard(
                         icon: Icons.star,
-                        title: _averageRating > 0 ? _averageRating.toStringAsFixed(1) : '0.0',
-                        subtitle: _totalReviews > 0 ? '($_totalReviews reviews)' : 'No reviews',
+                        title: _averageRating > 0
+                            ? _averageRating.toStringAsFixed(1)
+                            : '0.0',
+                        subtitle: _totalReviews > 0
+                            ? '($_totalReviews reviews)'
+                            : 'No reviews',
                         color: Colors.white,
                       ),
                       _buildStatCard(
                         icon: Icons.work,
-                        title: '8+', // This could also be made dynamic if you have the data
+                        title:
+                            '8+', // This could also be made dynamic if you have the data
                         subtitle: 'Years',
                         color: Colors.white,
                       ),
@@ -335,13 +340,20 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                   color: Colors.purple,
                 ),
 
-                // ✅ ADD: Rating info card
                 if (_totalReviews > 0)
-                  _buildInfoCard(
+                  _buildClickableInfoCard(
                     icon: Icons.star,
                     title: 'Patient Rating',
-                    value: '${_averageRating.toStringAsFixed(1)} ($_totalReviews reviews)',
+                    value:
+                        '${_averageRating.toStringAsFixed(1)} ($_totalReviews reviews)',
                     color: Colors.amber,
+                    onTap: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const DoctorReviewsScreen(),
+                        ),
+                      );
+                    },
                   ),
 
                 const SizedBox(height: 24),
@@ -476,9 +488,77 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               fontSize: 11,
               color: color.withValues(alpha: 0.8),
             ),
-            textAlign: TextAlign.center, // ✅ ADD: Center align for better layout
+            textAlign:
+                TextAlign.center, // ✅ ADD: Center align for better layout
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildClickableInfoCard({
+    required IconData icon,
+    required String title,
+    required String value,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 12),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: color.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: color.withValues(alpha: 0.3)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.2),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(icon, color: color, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: color.withValues(alpha: 0.8),
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      value,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios,
+                size: 16,
+                color: color.withValues(alpha: 0.6),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

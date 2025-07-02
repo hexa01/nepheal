@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/specialization.dart';
-
 import 'doctors_list_screen.dart';
 import 'patient_profile_screen.dart';
 import 'my_appointments_screen.dart';
 import 'my_reviews_screen.dart';
+import 'patient_messages_screen.dart';
 
 class PatientDashboard extends StatefulWidget {
   const PatientDashboard({super.key});
@@ -37,7 +37,9 @@ class _PatientDashboardState extends State<PatientDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _currentIndex < _screens.length ? _screens[_currentIndex] : _screens[0],
+      body: _currentIndex < _screens.length
+          ? _screens[_currentIndex]
+          : _screens[0],
       bottomNavigationBar: Container(
         decoration: BoxDecoration(
           boxShadow: [
@@ -317,7 +319,8 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                                     itemCount: _specializations.length,
                                     itemBuilder: (context, index) {
                                       return Padding(
-                                        padding: const EdgeInsets.only(right: 12),
+                                        padding:
+                                            const EdgeInsets.only(right: 12),
                                         child: _buildSpecializationCard(
                                             _specializations[index].name),
                                       );
