@@ -371,9 +371,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
 
   Widget _buildPastTab(
       Map<String, List<Map<String, dynamic>>> separatedAppointments) {
-    final toUpdateCount = separatedAppointments['past_to_update']?.length ?? 0;
-    final completedCount = separatedAppointments['past_completed']?.length ?? 0;
-    final missedCount = separatedAppointments['past_missed']?.length ?? 0;
 
     return Column(
       children: [
