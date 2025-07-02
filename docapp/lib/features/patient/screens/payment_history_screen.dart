@@ -413,14 +413,6 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
     }
   }
 
-  String _formatTime(String timeStr) {
-    try {
-      final time = DateFormat('HH:mm:ss').parse(timeStr);
-      return DateFormat('hh:mm a').format(time);
-    } catch (e) {
-      return timeStr;
-    }
-  }
 
   String _formatDateTime(String dateTimeStr) {
     try {

@@ -60,7 +60,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
       final response = await ApiService.getAppointmentsByStatus();
 
       if (response['success']) {
-        final data = response['data'];
         setState(() {
           _categorizedAppointments =
               ApiService.parseCategorizedAppointments(response);

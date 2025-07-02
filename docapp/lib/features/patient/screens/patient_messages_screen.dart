@@ -12,7 +12,6 @@ class PatientMessagesScreen extends StatefulWidget {
 }
 
 class _PatientMessagesScreenState extends State<PatientMessagesScreen> {
-  List<PatientMessage> _messages = [];
   Map<String, List<PatientMessage>> _groupedMessages = {};
   bool _isLoading = true;
   String? _error;
@@ -75,7 +74,6 @@ class _PatientMessagesScreenState extends State<PatientMessagesScreen> {
         });
 
         setState(() {
-          _messages = messages;
           _groupedMessages = grouped;
           _isLoading = false;
         });
