@@ -415,12 +415,4 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
 
 
 
-  String _formatDateOnly(String dateStr) {
-    try {
-      final date = DateTime.parse(dateStr);
-      return DateFormat('MMM dd, yyyy').format(date);
-    } catch (e) {
-      return dateStr;
-    }
-  }
 }
