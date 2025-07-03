@@ -919,7 +919,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
               size: 24,
             ),
             const SizedBox(width: 8),
-            Text('Mark as $statusText'),
+            Text('$statusText?'),
           ],
         ),
         content: Text(

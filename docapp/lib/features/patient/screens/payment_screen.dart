@@ -3,6 +3,7 @@ import 'package:webview_flutter/webview_flutter.dart';
 import 'package:intl/intl.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/models/payment.dart';
+import '../widgets/patient_dashboard_with_tab.dart';
 
 class PaymentScreen extends StatefulWidget {
   final int appointmentId;
@@ -42,7 +43,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _isLoadingMethods = true;
       _error = null;
     });
-    
+
     final methods = [
       PaymentMethod(
         id: 'esewa',
@@ -234,7 +235,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
   Widget _buildPaymentMethodCard(PaymentMethod method) {
     final isSelected = _selectedMethod?.id == method.id;
-    
+
     return Card(
       margin: const EdgeInsets.only(bottom: 12),
       elevation: isSelected ? 4 : 1,
@@ -246,7 +247,9 @@ class _PaymentScreenState extends State<PaymentScreen> {
         ),
       ),
       child: InkWell(
-        onTap: method.available ? () => setState(() => _selectedMethod = method) : null,
+        onTap: method.available
+            ? () => setState(() => _selectedMethod = method)
+            : null,
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -319,7 +322,8 @@ class _PaymentScreenState extends State<PaymentScreen> {
               ),
             ),
             const SizedBox(height: 12),
-            _buildSummaryRow('Consultation Fee', 'Rs. ${widget.amount.toStringAsFixed(0)}'),
+            _buildSummaryRow(
+                'Consultation Fee', 'Rs. ${widget.amount.toStringAsFixed(0)}'),
             _buildSummaryRow('Service Charge', 'Rs. 0'),
             const Divider(height: 24),
             _buildSummaryRow(
@@ -435,9 +439,10 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
       if (initiateResponse['success']) {
         final paymentId = initiateResponse['data']['payment_id'];
-        
+
         // Get eSewa HTML content
-        final htmlContent = await ApiService.initiateEsewaPayment(paymentId: paymentId);
+        final htmlContent =
+            await ApiService.initiateEsewaPayment(paymentId: paymentId);
 
         if (mounted) {
           final result = await Navigator.of(context).push<bool>(
@@ -451,9 +456,14 @@ class _PaymentScreenState extends State<PaymentScreen> {
 
           // Handle payment result
           if (result == true) {
-            // Payment successful - return true to indicate success
             if (mounted) {
-              Navigator.of(context).pop(true);
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(
+                  builder: (_) => const PatientDashboardWithTab(
+                      initialTab: 2), // 👈 open Appointments tab
+                ),
+                (route) => false,
+              );
             }
           } else {
             // Payment failed or cancelled
@@ -559,10 +569,33 @@ class _EsewaWebViewScreenState extends State<EsewaWebViewScreen> {
               _isLoading = true;
             });
           },
-          onPageFinished: (String url) {
+          onPageFinished: (String url) async {
             setState(() {
               _isLoading = false;
             });
+
+            if (url.contains('esewa/success')) {
+              Navigator.of(context).pop(true);
+              return;
+            } else if (url.contains('esewa/failure')) {
+              Navigator.of(context).pop(false);
+              return;
+            }
+
+            // 🟨 Fallback: Check if raw JSON page loaded
+            try {
+              final rawText = await controller
+                  .runJavaScriptReturningResult("document.body.innerText");
+
+              final text = rawText.toString();
+              if (text.contains('"success":true')) {
+                Navigator.of(context).pop(true);
+              } else if (text.contains('"success":false')) {
+                Navigator.of(context).pop(false);
+              }
+            } catch (e) {
+              // optional: log or ignore
+            }
           },
           onNavigationRequest: (NavigationRequest request) {
             // Handle eSewa success/failure URLs
