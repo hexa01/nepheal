@@ -12,7 +12,7 @@ class PaymentHistoryScreen extends StatefulWidget {
 class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
   bool _isLoading = true;
   String? _error;
-  List<Map<String, dynamic>> _paidPayments = []; // Store as Map like v12
+  List<Map<String, dynamic>> _paidPayments = [];
 
   @override
   void initState() {
@@ -36,7 +36,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
       if (response['success']) {
         final paymentsData = response['data'] as List<dynamic>? ?? [];
         
-        // ✅ Filter to only include paid payments using the v12 logic
+        // Filter to only include paid payments
         final allPayments = paymentsData
             .map((data) => Map<String, dynamic>.from(data))
             .toList();
@@ -266,7 +266,7 @@ class _PaymentHistoryScreenState extends State<PaymentHistoryScreen> {
         if (doctor != null) {
           doctorName = doctor['name']?.toString();
           
-          // ✅ FIXED: Extract specialization name from the object
+          // specialization name from the object
           final specializationObj = doctor['specialization'] as Map<String, dynamic>?;
           if (specializationObj != null) {
             doctorSpecialization = specializationObj['name']?.toString();

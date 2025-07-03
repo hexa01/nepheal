@@ -1,13 +1,13 @@
-// Fixed my_appointments_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'payment_screen.dart';
 import 'reschedule_appointment_screen.dart';
-import '../../../shared/services/api_service.dart';
+import '../../../shared/services/appointment_service.dart';
 import '../../../shared/models/review.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import 'create_review_screen.dart';
+import 'my_reviews_screen.dart';
 import '../../../shared/widgets/exit_wrapper_widget.dart';
 
 class MyAppointmentsScreen extends StatefulWidget {
@@ -22,16 +22,6 @@ class MyAppointmentsScreen extends StatefulWidget {
 class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  bool _isLoading = true;
-  String? _error;
-
-  Map<String, List<Map<String, dynamic>>> _categorizedAppointments = {
-    'pending': [],
-    'booked': [],
-    'completed': [],
-    'missed': [],
-  };
-
 
   @override
   void initState() {
@@ -51,132 +41,106 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
   }
 
   Future<void> _loadAppointments() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+    final appointmentService =
+        Provider.of<AppointmentService>(context, listen: false);
 
     try {
-      final response = await ApiService.getAppointmentsByStatus();
-
-      if (response['success']) {
-        setState(() {
-          _categorizedAppointments =
-              ApiService.parseCategorizedAppointments(response);
-        });
-      } else {
-        setState(() {
-          _error = response['message'] ?? 'Failed to load appointments';
-        });
-      }
+      await Future.wait([
+        appointmentService.getAppointments(),
+        appointmentService.getAppointmentStats(),
+      ]);
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Error handling moved to Consumer
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return ExitWrapper(
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('My Appointments'),
-          backgroundColor: Colors.blue.shade600,
-          foregroundColor: Colors.white,
-          bottom: TabBar(
-            controller: _tabController,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
-            tabs: [
-              Tab(
-                text: 'Pending',
-                icon: Badge(
-                  label: Text(
-                      '${_categorizedAppointments['pending']?.length ?? 0}'),
-                  child: const Icon(Icons.schedule),
-                ),
-              ),
-              Tab(
-                text: 'Booked',
-                icon: Badge(
-                  label: Text(
-                      '${_categorizedAppointments['booked']?.length ?? 0}'),
-                  child: const Icon(Icons.check_circle),
-                ),
-              ),
-              Tab(
-                text: 'Completed',
-                icon: Badge(
-                  label: Text(
-                      '${_categorizedAppointments['completed']?.length ?? 0}'),
-                  child: const Icon(Icons.check_circle_outline),
-                ),
-              ),
-              Tab(
-                text: 'Missed',
-                icon: Badge(
-                  label: Text(
-                      '${_categorizedAppointments['missed']?.length ?? 0}'),
-                  child: const Icon(Icons.cancel),
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: _isLoading
-            ? const Center(child: CircularProgressIndicator())
-            : _error != null
-                ? _buildErrorState()
-                : TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _buildAppointmentsList('pending'),
-                      _buildAppointmentsList('booked'),
-                      _buildAppointmentsList('completed'),
-                      _buildAppointmentsList('missed'),
-                    ],
+    return Consumer<AppointmentService>(
+      builder: (context, appointmentService, child) {
+        final categorizedAppointments =
+            appointmentService.categorizedAppointments;
+        final isLoading = appointmentService.isLoadingAppointments &&
+            !appointmentService.hasCachedAppointments;
+        final stats = appointmentService.appointmentStats;
+
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Appointments'),
+            backgroundColor: Colors.blue.shade600,
+            foregroundColor: Colors.white,
+            bottom: TabBar(
+              controller: _tabController,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white70,
+              indicatorColor: Colors.white,
+              tabs: [
+                Tab(
+                  text: 'Pending',
+                  icon: Badge(
+                    label: Text(
+                        '${categorizedAppointments['pending']?.length ?? 0}'),
+                    child: const Icon(Icons.schedule),
                   ),
-      ),
+                ),
+                Tab(
+                  text: 'Booked',
+                  icon: Badge(
+                    label: Text(
+                        '${categorizedAppointments['booked']?.length ?? 0}'),
+                    child: const Icon(Icons.check_circle),
+                  ),
+                ),
+                Tab(
+                  text: 'Completed',
+                  icon: Badge(
+                    label: Text(
+                        '${categorizedAppointments['completed']?.length ?? 0}'),
+                    child: const Icon(Icons.check_circle_outline),
+                  ),
+                ),
+                Tab(
+                  text: 'Missed',
+                  icon: Badge(
+                    label: Text(
+                        '${categorizedAppointments['missed']?.length ?? 0}'),
+                    child: const Icon(Icons.cancel),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          body: isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : TabBarView(
+                  controller: _tabController,
+                  children: [
+                    _buildAppointmentsList('pending', categorizedAppointments),
+                    _buildAppointmentsList('booked', categorizedAppointments),
+                    _buildAppointmentsList(
+                        'completed', categorizedAppointments),
+                    _buildAppointmentsList('missed', categorizedAppointments),
+                  ],
+                ),
+        );
+      },
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.error, size: 64, color: Colors.red),
-          const SizedBox(height: 16),
-          Text(
-            _error!,
-            textAlign: TextAlign.center,
-            style: const TextStyle(fontSize: 16),
-          ),
-          const SizedBox(height: 16),
-          ElevatedButton(
-            onPressed: _loadAppointments,
-            child: const Text('Retry'),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAppointmentsList(String category) {
-    final appointments = _categorizedAppointments[category] ?? [];
+  Widget _buildAppointmentsList(String category,
+      Map<String, List<Map<String, dynamic>>> categorizedAppointments) {
+    final appointments = categorizedAppointments[category] ?? [];
 
     if (appointments.isEmpty) {
       return _buildEmptyState(category);
     }
 
     return RefreshIndicator(
-      onRefresh: _loadAppointments,
+      onRefresh: () async {
+        final appointmentService =
+            Provider.of<AppointmentService>(context, listen: false);
+        await appointmentService.getAppointments(forceRefresh: true);
+      },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: appointments.length,
@@ -294,22 +258,6 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
                       ],
                     ),
                   ],
-                ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  // child: Text(
-                  //   '#${appointment['id']?.toString() ?? 'N/A'}',
-                  //   style: TextStyle(
-                  //     fontSize: 12,
-                  //     fontWeight: FontWeight.bold,
-                  //     color: Colors.grey.shade600,
-                  //   ),
-                  // ),
                 ),
               ],
             ),
@@ -623,10 +571,12 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     );
 
     if (result == true) {
-      await _loadAppointments();
+      final appointmentService =
+          Provider.of<AppointmentService>(context, listen: false);
+      await appointmentService.getAppointments(forceRefresh: true);
+
       if (mounted) {
-        // Switch to booked tab after successful payment
-        _tabController.animateTo(1);
+        _tabController.animateTo(1); // Switch to booked tab
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Payment completed successfully!'),
@@ -653,7 +603,10 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     );
 
     if (result == true) {
-      await _loadAppointments();
+      final appointmentService =
+          Provider.of<AppointmentService>(context, listen: false);
+      await appointmentService.getAppointments(forceRefresh: true);
+
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -667,6 +620,9 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
   }
 
   Future<void> _cancelAppointment(Map<String, dynamic> appointment) async {
+    final appointmentService =
+        Provider.of<AppointmentService>(context, listen: false);
+
     final bool? confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -688,44 +644,19 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
     );
 
     if (confirmed == true) {
-      try {
-        final response =
-            await ApiService.cancelAppointment(appointment['id'] ?? 0);
+      final success =
+          await appointmentService.cancelAppointment(appointment['id'] ?? 0);
 
-        if (response['success']) {
-          await _loadAppointments();
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Appointment cancelled successfully'),
-                backgroundColor: Colors.green,
-                duration: Duration(seconds: 3),
-              ),
-            );
-          }
-        } else {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content:
-                    Text(response['message'] ?? 'Failed to cancel appointment'),
-                backgroundColor: Colors.red,
-                duration: const Duration(seconds: 3),
-              ),
-            );
-          }
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
-              backgroundColor: Colors.red,
-              duration: const Duration(seconds: 3),
-            ),
-          );
-        }
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(success
+                ? 'Appointment cancelled successfully'
+                : 'Failed to cancel appointment'),
+            backgroundColor: success ? Colors.green : Colors.red,
+            duration: const Duration(seconds: 3),
+          ),
+        );
       }
     }
   }
@@ -741,12 +672,10 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
         doctor: DoctorInfo(
           id: appointment['doctor_id'] ?? 0,
           name: appointment['doctor_name']?.toString() ?? 'Unknown Doctor',
-          specialization: appointment['specialization']?.toString() ??
-              'General', // Add specialization if available
-          profilePhoto: appointment['profile_photo']!
-              .toString(), // Add specialization if available
-          profilePhotoUrl: appointment['profile_photo_url']!
-              .toString(), // Add profile photo if available
+          specialization:
+              appointment['specialization']?.toString() ?? 'General',
+          profilePhoto: appointment['profile_photo']?.toString() ?? '',
+          profilePhotoUrl: appointment['profile_photo_url']?.toString() ?? '',
         ),
       );
 
@@ -760,7 +689,10 @@ class _MyAppointmentsScreenState extends State<MyAppointmentsScreen>
 
       // Refresh appointments if review was successfully created
       if (result == true) {
-        await _loadAppointments();
+        final appointmentService =
+            Provider.of<AppointmentService>(context, listen: false);
+        await appointmentService.getAppointments(forceRefresh: true);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(

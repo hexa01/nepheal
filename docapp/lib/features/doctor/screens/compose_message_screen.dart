@@ -1,5 +1,3 @@
-// features/doctor/screens/compose_message_screen.dart
-
 import 'package:flutter/material.dart';
 import '../../../shared/models/message.dart';
 import '../../../shared/services/api_service.dart';

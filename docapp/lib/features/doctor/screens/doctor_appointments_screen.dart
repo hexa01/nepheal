@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+import '../../../shared/services/appointment_service.dart';
 import '../../../shared/services/api_service.dart';
 import '../../../shared/widgets/profile_avatar_widget.dart';
 import '../../../shared/widgets/exit_wrapper_widget.dart';
@@ -19,16 +21,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
   late TabController _mainTabController;
   late TabController _upcomingTabController;
   late TabController _pastTabController;
-
-  bool _isLoading = true;
-  String? _error;
-
-  Map<String, List<Map<String, dynamic>>> _categorizedAppointments = {
-    'pending': [],
-    'booked': [],
-    'completed': [],
-    'missed': [],
-  };
 
   final ScrollController _scrollController = ScrollController();
 
@@ -66,33 +58,16 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
   }
 
   Future<void> _loadAppointments() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-      _currentPage = 1;
-    });
+    final appointmentService =
+        Provider.of<AppointmentService>(context, listen: false);
 
     try {
-      final response = await ApiService.getAppointmentsByStatus();
-
-      if (response['success']) {
-        setState(() {
-          _categorizedAppointments =
-              ApiService.parseCategorizedAppointments(response);
-        });
-      } else {
-        setState(() {
-          _error = response['message'] ?? 'Failed to load appointments';
-        });
-      }
+      await Future.wait([
+        appointmentService.getAppointments(),
+        appointmentService.getAppointmentStats(),
+      ]);
     } catch (e) {
-      setState(() {
-        _error = e.toString().replaceAll('Exception: ', '');
-      });
-    } finally {
-      setState(() {
-        _isLoading = false;
-      });
+      // Error handling moved to Consumer
     }
   }
 
@@ -104,7 +79,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     });
 
     try {
-      // Simulate loading more appointments (you'd implement pagination in your API)
+      // Simulate loading more appointments
       await Future.delayed(const Duration(seconds: 1));
 
       setState(() {
@@ -119,7 +94,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
   }
 
   // Separate appointments by date with pagination for past appointments
-  Map<String, List<Map<String, dynamic>>> _separateAppointmentsByDate() {
+  Map<String, List<Map<String, dynamic>>> _separateAppointmentsByDate(
+      Map<String, List<Map<String, dynamic>>> categorizedAppointments) {
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
 
@@ -130,7 +106,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     List<Map<String, dynamic>> pastMissed = [];
 
     // Process each category
-    for (var appointment in _categorizedAppointments['pending'] ?? []) {
+    for (var appointment in categorizedAppointments['pending'] ?? []) {
       final dateStr =
           appointment['appointment_date'] ?? appointment['date'] ?? '';
       if (_isUpcomingOrToday(dateStr, today)) {
@@ -138,7 +114,7 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
       }
     }
 
-    for (var appointment in _categorizedAppointments['booked'] ?? []) {
+    for (var appointment in categorizedAppointments['booked'] ?? []) {
       final dateStr =
           appointment['appointment_date'] ?? appointment['date'] ?? '';
       if (_isUpcomingOrToday(dateStr, today)) {
@@ -149,8 +125,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     }
 
     // For completed and missed, implement pagination
-    final completedList = _categorizedAppointments['completed'] ?? [];
-    final missedList = _categorizedAppointments['missed'] ?? [];
+    final completedList = categorizedAppointments['completed'] ?? [];
+    final missedList = categorizedAppointments['missed'] ?? [];
 
     // Sort by date (most recent first) and paginate
     completedList.sort((a, b) {
@@ -218,78 +194,84 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
 
   @override
   Widget build(BuildContext context) {
-    final separatedAppointments = _separateAppointmentsByDate();
+    return Consumer<AppointmentService>(
+      builder: (context, appointmentService, child) {
+        final categorizedAppointments =
+            appointmentService.categorizedAppointments;
+        final isLoading = appointmentService.isLoadingAppointments &&
+            !appointmentService.hasCachedAppointments;
+        final separatedAppointments =
+            _separateAppointmentsByDate(categorizedAppointments);
 
-    final upcomingPendingCount =
-        separatedAppointments['upcoming_pending']?.length ?? 0;
-    final upcomingBookedCount =
-        separatedAppointments['upcoming_booked']?.length ?? 0;
-    final pastToUpdateCount =
-        separatedAppointments['past_to_update']?.length ?? 0;
-    final pastCompletedCount =
-        separatedAppointments['past_completed']?.length ?? 0;
-    final pastMissedCount = separatedAppointments['past_missed']?.length ?? 0;
+        final upcomingPendingCount =
+            separatedAppointments['upcoming_pending']?.length ?? 0;
+        final upcomingBookedCount =
+            separatedAppointments['upcoming_booked']?.length ?? 0;
+        final pastToUpdateCount =
+            separatedAppointments['past_to_update']?.length ?? 0;
+        final pastCompletedCount =
+            separatedAppointments['past_completed']?.length ?? 0;
+        final pastMissedCount =
+            separatedAppointments['past_missed']?.length ?? 0;
 
-    return ExitWrapper(
-      child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
-        appBar: AppBar(
-          title: const Text('My Appointments'),
-          backgroundColor: Colors.green,
-          foregroundColor: Colors.white,
-          elevation: 0,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.green, Colors.green.shade500],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+        return ExitWrapper(
+          child: Scaffold(
+            backgroundColor: Colors.grey.shade50,
+            appBar: AppBar(
+              title: const Text('My Appointments'),
+              backgroundColor: Colors.green,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              flexibleSpace: Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green, Colors.green.shade500],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                ),
+              ),
+              bottom: TabBar(
+                controller: _mainTabController,
+                labelColor: Colors.white,
+                unselectedLabelColor: Colors.white70,
+                indicatorColor: Colors.white,
+                indicatorWeight: 3,
+                tabs: [
+                  Tab(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Badge(
+                          label: Text(
+                              '${upcomingPendingCount + upcomingBookedCount}'),
+                          child: const Icon(Icons.schedule, size: 20),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('Upcoming', style: TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                  Tab(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Badge(
+                          label: Text(
+                              '${pastToUpdateCount + pastCompletedCount + pastMissedCount}'),
+                          child: const Icon(Icons.history, size: 20),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text('Past', style: TextStyle(fontSize: 14)),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-          bottom: TabBar(
-            controller: _mainTabController,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            indicatorColor: Colors.white,
-            indicatorWeight: 3,
-            tabs: [
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Badge(
-                      label:
-                          Text('${upcomingPendingCount + upcomingBookedCount}'),
-                      child: const Icon(Icons.schedule, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('Upcoming', style: TextStyle(fontSize: 14)),
-                  ],
-                ),
-              ),
-              Tab(
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Badge(
-                      label: Text(
-                          '${pastToUpdateCount + pastCompletedCount + pastMissedCount}'),
-                      child: const Icon(Icons.history, size: 20),
-                    ),
-                    const SizedBox(width: 8),
-                    const Text('Past', style: TextStyle(fontSize: 14)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-        body: _isLoading
-            ? const Center(
-                child: CircularProgressIndicator(color: Colors.green))
-            : _error != null
-                ? _buildErrorState()
+            body: isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(color: Colors.green))
                 : Column(
                     children: [
                       Expanded(
@@ -303,13 +285,14 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
                       ),
                     ],
                   ),
-      ),
+          ),
+        );
+      },
     );
   }
 
   Widget _buildUpcomingTab(
       Map<String, List<Map<String, dynamic>>> separatedAppointments) {
-
     return Column(
       children: [
         Container(
@@ -371,7 +354,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
 
   Widget _buildPastTab(
       Map<String, List<Map<String, dynamic>>> separatedAppointments) {
-
     return Column(
       children: [
         Container(
@@ -458,7 +440,11 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: _loadAppointments,
+      onRefresh: () async {
+        final appointmentService =
+            Provider.of<AppointmentService>(context, listen: false);
+        await appointmentService.getAppointments(forceRefresh: true);
+      },
       color: Colors.teal,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
@@ -478,7 +464,11 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     }
 
     return RefreshIndicator(
-      onRefresh: _loadAppointments,
+      onRefresh: () async {
+        final appointmentService =
+            Provider.of<AppointmentService>(context, listen: false);
+        await appointmentService.getAppointments(forceRefresh: true);
+      },
       color: Colors.teal,
       child: ListView.builder(
         controller: _scrollController,
@@ -833,44 +823,6 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     );
   }
 
-  Widget _buildErrorState() {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
-            const SizedBox(height: 16),
-            Text(
-              'Something went wrong',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w600,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _error!,
-              textAlign: TextAlign.center,
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadAppointments,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.teal.shade600,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Try Again'),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
   StatusInfo _getStatusInfo(String status) {
     switch (status) {
       case 'pending':
@@ -947,6 +899,8 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
 
   Future<void> _updateAppointmentStatus(
       Map<String, dynamic> appointment, String newStatus) async {
+    final appointmentService =
+        Provider.of<AppointmentService>(context, listen: false);
     final statusText = newStatus == 'completed' ? 'Completed' : 'Missed';
     final patient = appointment['patient'] as Map<String, dynamic>?;
     final patientUser = patient?['user'] as Map<String, dynamic>?;
@@ -990,63 +944,16 @@ class _DoctorAppointmentsScreenState extends State<DoctorAppointmentsScreen>
     );
 
     if (confirmed == true) {
-      await _performStatusUpdate(appointment['id'], newStatus);
-    }
-  }
-
-  Future<void> _performStatusUpdate(int appointmentId, String newStatus) async {
-    try {
-      // Show loading
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (context) => const Center(
-          child: CircularProgressIndicator(),
-        ),
-      );
-
-      final response = await ApiService.updateAppointmentStatus(
-        appointmentId: appointmentId,
-        status: newStatus,
-      );
-
-      // Hide loading
-      if (mounted) Navigator.of(context).pop();
-
-      if (response['success']) {
-        // Refresh appointments
-        await _loadAppointments();
-
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  'Appointment marked as ${newStatus == 'completed' ? 'completed' : 'missed'}'),
-              backgroundColor:
-                  newStatus == 'completed' ? Colors.green : Colors.red,
-            ),
-          );
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content:
-                  Text(response['message'] ?? 'Failed to update appointment'),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      }
-    } catch (e) {
-      // Hide loading
-      if (mounted) Navigator.of(context).pop();
+      final success = await appointmentService.updateAppointmentStatus(
+          appointment['id'] ?? 0, newStatus);
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Error: ${e.toString()}'),
-            backgroundColor: Colors.red,
+            content: Text(success
+                ? 'Appointment marked as ${newStatus == 'completed' ? 'completed' : 'missed'}'
+                : 'Failed to update appointment'),
+            backgroundColor: success ? Colors.green : Colors.red,
           ),
         );
       }

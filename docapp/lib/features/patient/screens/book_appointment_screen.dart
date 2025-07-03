@@ -27,92 +27,90 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ExitWrapper(
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Book Appointment'),
-          backgroundColor: Colors.blue.shade600,
-          foregroundColor: Colors.white,
-        ),
-        body: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Doctor info card
-              _buildDoctorCard(),
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Book Appointment'),
+        backgroundColor: Colors.blue.shade600,
+        foregroundColor: Colors.white,
+      ),
+      body: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Doctor info card
+            _buildDoctorCard(),
+            const SizedBox(height: 24),
+
+            // Date selection
+            _buildDateSelection(),
+            const SizedBox(height: 24),
+
+            // Time slots
+            if (_selectedDate != null) ...[
+              _buildTimeSlotSelection(),
               const SizedBox(height: 24),
+            ],
 
-              // Date selection
-              _buildDateSelection(),
-              const SizedBox(height: 24),
-
-              // Time slots
-              if (_selectedDate != null) ...[
-                _buildTimeSlotSelection(),
-                const SizedBox(height: 24),
-              ],
-
-              // Error message
-              if (_error != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.red.shade50,
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: Colors.red.shade200),
-                  ),
-                  child: Row(
-                    children: [
-                      Icon(Icons.error, color: Colors.red.shade700),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          _error!,
-                          style: TextStyle(color: Colors.red.shade700),
-                        ),
-                      ),
-                    ],
-                  ),
+            // Error message
+            if (_error != null) ...[
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.red.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.red.shade200),
                 ),
-                const SizedBox(height: 24),
-              ],
-
-              // Book appointment button
-              SizedBox(
-                width: double.infinity,
-                child: ElevatedButton(
-                  onPressed: _selectedDate != null &&
-                          _selectedSlot != null &&
-                          !_isBooking
-                      ? _bookAppointment
-                      : null,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue.shade600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.red.shade700),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        _error!,
+                        style: TextStyle(color: Colors.red.shade700),
+                      ),
                     ),
-                  ),
-                  child: _isBooking
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : const Text(
-                          'Book Appointment',
-                          style: TextStyle(
-                              fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
+                  ],
                 ),
               ),
+              const SizedBox(height: 24),
             ],
-          ),
+
+            // Book appointment button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: _selectedDate != null &&
+                        _selectedSlot != null &&
+                        !_isBooking
+                    ? _bookAppointment
+                    : null,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue.shade600,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                ),
+                child: _isBooking
+                    ? const SizedBox(
+                        height: 20,
+                        width: 20,
+                        child: CircularProgressIndicator(
+                          color: Colors.white,
+                          strokeWidth: 2,
+                        ),
+                      )
+                    : const Text(
+                        'Book Appointment',
+                        style: TextStyle(
+                            fontSize: 16, fontWeight: FontWeight.w600),
+                      ),
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -157,7 +155,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   ),
                   const SizedBox(height: 4),
                   Text(
-                    'Rs. ${widget.doctor.hourlyRate.toStringAsFixed(0)}/session',
+                    'Rs. ${(widget.doctor.hourlyRate / 2).toStringAsFixed(0)}/session',
                     style: TextStyle(
                       fontSize: 14,
                       color: Colors.green.shade600,
@@ -318,9 +316,18 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       );
 
       if (response['success']) {
-        setState(() {
-          _availableSlots = List<String>.from(response['data']);
-        });
+        final data = response['data'];
+if (data is List) {
+  setState(() {
+    _availableSlots = List<String>.from(data);
+    _error = null;
+  });
+} else if (data is Map) {
+  setState(() {
+    _availableSlots = data.values.map((e) => e.toString()).toList();
+    _error = null;
+  });
+}
       } else {
         setState(() {
           _error = response['message'] ?? 'Failed to load available slots';
@@ -389,7 +396,13 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
           children: [
             Icon(Icons.check_circle, color: Colors.green.shade600, size: 28),
             const SizedBox(width: 8),
-            const Text('Appointment Booked!'),
+            const Text(
+              'Appointment Booked!',
+              style: TextStyle(
+                fontSize: 16, // 👈 Decreased font size
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ],
         ),
         content: Column(

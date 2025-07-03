@@ -1,5 +1,3 @@
-// Fixed payment_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 import 'package:intl/intl.dart';
@@ -44,8 +42,7 @@ class _PaymentScreenState extends State<PaymentScreen> {
       _isLoadingMethods = true;
       _error = null;
     });
-
-    // Hard-coded payment methods
+    
     final methods = [
       PaymentMethod(
         id: 'esewa',

@@ -1,5 +1,3 @@
-// features/doctor/screens/doctor_dashboard.dart
-
 import 'package:flutter/material.dart';
 import 'doctor_appointments_screen.dart';
 import 'doctor_profile_screen.dart';

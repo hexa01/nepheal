@@ -24,6 +24,7 @@ class SlotController extends BaseController
      */
     public function index(Request $request)
     {
+        $available_slots = [];
         $request->validate([
             'appointment_date' => 'required|date|after_or_equal:' . Carbon::tomorrow()->toDateString(),
             'doctor_id' => 'required|exists:doctors,id',

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/models/review.dart';
-import '../../../shared/services/api_service.dart';
+import '../../../shared/services/review_service.dart';
 import '../../../shared/widgets/review_card_widget.dart';
 import '../../../shared/widgets/rating_widget.dart';
 import 'create_review_screen.dart';
@@ -17,13 +18,6 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
 
-  List<Review> _myReviews = [];
-  List<ReviewableAppointment> _reviewableAppointments = [];
-  bool _isLoadingReviews = true;
-  bool _isLoadingAppointments = true;
-  String? _reviewsError;
-  String? _appointmentsError;
-
   @override
   void initState() {
     super.initState();
@@ -38,171 +32,108 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
   }
 
   Future<void> _loadData() async {
+    final reviewService = Provider.of<ReviewService>(context, listen: false);
+    
     await Future.wait([
-      _loadMyReviews(),
-      _loadReviewableAppointments(),
+      reviewService.getPatientReviews(),
+      reviewService.getReviewableAppointments(),
     ]);
-  }
-
-  Future<void> _loadMyReviews() async {
-    setState(() {
-      _isLoadingReviews = true;
-      _reviewsError = null;
-    });
-
-    try {
-      final response = await ApiService.getPatientReviews();
-
-      if (response['success']) {
-        final reviewsData = response['data']['reviews'] as List;
-        setState(() {
-          _myReviews =
-              reviewsData.map((json) => Review.fromJson(json)).toList();
-        });
-      } else {
-        setState(() {
-          _reviewsError = response['message'] ?? 'Failed to load your reviews';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _reviewsError = 'Connection error. Please try again.';
-      });
-    } finally {
-      setState(() {
-        _isLoadingReviews = false;
-      });
-    }
-  }
-
-  Future<void> _loadReviewableAppointments() async {
-    setState(() {
-      _isLoadingAppointments = true;
-      _appointmentsError = null;
-    });
-
-    try {
-      final response = await ApiService.getReviewableAppointments();
-
-      if (response['success']) {
-        final appointmentsData = response['data']['appointments'] as List;
-        setState(() {
-          _reviewableAppointments = appointmentsData
-              .map((json) => ReviewableAppointment.fromJson(json))
-              .toList();
-        });
-      } else {
-        setState(() {
-          _appointmentsError =
-              response['message'] ?? 'Failed to load appointments';
-        });
-      }
-    } catch (e) {
-      setState(() {
-        _appointmentsError = 'Connection error. Please try again.';
-      });
-    } finally {
-      setState(() {
-        _isLoadingAppointments = false;
-      });
-    }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('My Reviews'),
-        backgroundColor: Colors.blue,
-        foregroundColor: Colors.white,
-        elevation: 0,
-        bottom: TabBar(
-          controller: _tabController,
-          indicatorColor: Colors.white,
-          indicatorWeight: 3,
-          labelColor: Colors.white,
-          unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
-          labelStyle: const TextStyle(
-            fontWeight: FontWeight.bold,
-            fontSize: 16,
+    return Consumer<ReviewService>(
+      builder: (context, reviewService, child) {
+        return Scaffold(
+          appBar: AppBar(
+            title: const Text('My Reviews'),
+            backgroundColor: Colors.blue,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            bottom: TabBar(
+              controller: _tabController,
+              indicatorColor: Colors.white,
+              indicatorWeight: 3,
+              labelColor: Colors.white,
+              unselectedLabelColor: Colors.white.withValues(alpha: 0.7),
+              labelStyle: const TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+              ),
+              unselectedLabelStyle: const TextStyle(
+                fontWeight: FontWeight.w500,
+                fontSize: 16,
+              ),
+              tabs: [
+                Tab(text: 'My Reviews (${reviewService.patientReviews.length})'),
+                Tab(text: 'Write Review (${reviewService.reviewableAppointments.length})'),
+              ],
+            ),
           ),
-          unselectedLabelStyle: const TextStyle(
-            fontWeight: FontWeight.w500,
-            fontSize: 16,
+          body: TabBarView(
+            controller: _tabController,
+            children: [
+              _buildMyReviewsTab(reviewService),
+              _buildWriteReviewTab(reviewService),
+            ],
           ),
-          tabs: const [
-            Tab(text: 'My Reviews'),
-            Tab(text: 'Write Review'),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          _buildMyReviewsTab(),
-          _buildWriteReviewTab(),
-        ],
-      ),
+        );
+      },
     );
   }
 
-  Widget _buildMyReviewsTab() {
+  Widget _buildMyReviewsTab(ReviewService reviewService) {
+    final myReviews = reviewService.patientReviews;
+    final isLoading = reviewService.isLoadingPatientReviews && !reviewService.hasCachedPatientReviews;
+    
     return RefreshIndicator(
-      onRefresh: _loadMyReviews,
-      child: _isLoadingReviews
+      onRefresh: () => reviewService.refreshAllData('patient'),
+      child: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _reviewsError != null
-              ? _buildErrorState(
-                  error: _reviewsError!,
-                  onRetry: _loadMyReviews,
-                )
-              : _myReviews.isEmpty
-                  ? _buildEmptyReviewsState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _myReviews.length,
-                      itemBuilder: (context, index) {
-                        final review = _myReviews[index];
-                        return ReviewCard(
-                          review: review,
-                          showDoctorName: true,
-                          showActions: true,
-                          onEdit: () => _editReview(review),
-                          onDelete: () => _deleteReview(review),
-                        );
-                      },
-                    ),
+          : myReviews.isEmpty
+              ? _buildEmptyReviewsState()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: myReviews.length,
+                  itemBuilder: (context, index) {
+                    final review = myReviews[index];
+                    return ReviewCard(
+                      review: review,
+                      showDoctorName: true,
+                      showActions: true,
+                      onEdit: () => _editReview(review),
+                      onDelete: () => _deleteReview(review),
+                    );
+                  },
+                ),
     );
   }
 
-  Widget _buildWriteReviewTab() {
+  Widget _buildWriteReviewTab(ReviewService reviewService) {
+    final reviewableAppointments = reviewService.reviewableAppointments;
+    final isLoading = reviewService.isLoadingReviewableAppointments && !reviewService.hasCachedReviewableAppointments;
+    
     return RefreshIndicator(
-      onRefresh: _loadReviewableAppointments,
-      child: _isLoadingAppointments
+      onRefresh: () => reviewService.refreshAllData('patient'),
+      child: isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _appointmentsError != null
-              ? _buildErrorState(
-                  error: _appointmentsError!,
-                  onRetry: _loadReviewableAppointments,
-                )
-              : _reviewableAppointments.isEmpty
-                  ? _buildNoAppointmentsState()
-                  : ListView.builder(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _reviewableAppointments.length,
-                      itemBuilder: (context, index) {
-                        final appointment = _reviewableAppointments[index];
-                        return _buildReviewableAppointmentCard(appointment);
-                      },
-                    ),
+          : reviewableAppointments.isEmpty
+              ? _buildNoAppointmentsState()
+              : ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: reviewableAppointments.length,
+                  itemBuilder: (context, index) {
+                    final appointment = reviewableAppointments[index];
+                    return _buildReviewableAppointmentCard(appointment);
+                  },
+                ),
     );
   }
 
   Widget _buildEmptyReviewsState() {
     return EmptyReviewsWidget(
       title: 'No Reviews Yet',
-      subtitle:
-          'You haven\'t written any reviews.\nComplete appointments to write reviews.',
+      subtitle: 'You haven\'t written any reviews.\nComplete appointments to write reviews.',
       icon: Icons.rate_review,
       actionText: 'Find Doctors',
       onAction: () {
@@ -215,77 +146,13 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
   Widget _buildNoAppointmentsState() {
     return EmptyReviewsWidget(
       title: 'No Appointments to Review',
-      subtitle:
-          'Complete appointments with doctors to write reviews about your experience.',
+      subtitle: 'Complete appointments with doctors to write reviews about your experience.',
       icon: Icons.assignment_turned_in,
       actionText: 'Book Appointment',
       onAction: () {
         // Navigate to find doctors
         Navigator.of(context).pop();
       },
-    );
-  }
-
-  Widget _buildErrorState({
-    required String error,
-    required VoidCallback onRetry,
-  }) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.red.shade50,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Icon(
-                Icons.error_outline,
-                size: 64,
-                color: Colors.red.shade300,
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Something went wrong',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey.shade700,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              error,
-              style: TextStyle(
-                fontSize: 16,
-                color: Colors.grey.shade600,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
-              onPressed: onRetry,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Try Again'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue,
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 24,
-                  vertical: 12,
-                ),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -341,23 +208,6 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
                     ],
                   ),
                 ),
-                // Container(
-                //   padding:
-                //       const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                //   decoration: BoxDecoration(
-                //     color: Colors.blue.shade50,
-                //     borderRadius: BorderRadius.circular(8),
-                //     border: Border.all(color: Colors.blue.shade200),
-                //   ),
-                //   child: Text(
-                //     '#${appointment.id}',
-                //     style: TextStyle(
-                //       fontSize: 10,
-                //       color: Colors.blue.shade600,
-                //       fontWeight: FontWeight.bold,
-                //     ),
-                //   ),
-                // ),
               ],
             ),
 
@@ -513,11 +363,14 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
 
     // Refresh data if review was successfully submitted
     if (result == true) {
-      await _loadData();
+      final reviewService = Provider.of<ReviewService>(context, listen: false);
+      await reviewService.refreshAllData('patient');
     }
   }
 
   Future<void> _editReview(Review review) async {
+    final reviewService = Provider.of<ReviewService>(context, listen: false);
+    
     // Show edit dialog
     final result = await showDialog<Map<String, dynamic>>(
       context: context,
@@ -525,44 +378,27 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
     );
 
     if (result != null) {
-      try {
-        final response = await ApiService.updateReview(
-          reviewId: review.id,
-          rating: result['rating'],
-          comment: result['comment'],
-        );
+      final success = await reviewService.updateReview(
+        reviewId: review.id,
+        rating: result['rating'],
+        comment: result['comment'],
+      );
 
-        if (response['success']) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Review updated successfully'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
-          await _loadMyReviews();
-        } else {
-          throw Exception(response['message'] ?? 'Failed to update review');
-        }
-      } catch (e) {
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(success 
+                    ? 'Review updated successfully' 
+                    : 'Failed to update review'),
+              ],
             ),
+            backgroundColor: success ? Colors.green : Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
       }
@@ -570,6 +406,8 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
   }
 
   Future<void> _deleteReview(Review review) async {
+    final reviewService = Provider.of<ReviewService>(context, listen: false);
+    
     final confirmed = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -602,40 +440,23 @@ class _MyReviewsScreenState extends State<MyReviewsScreen>
     );
 
     if (confirmed == true) {
-      try {
-        final response = await ApiService.deleteReview(review.id);
-
-        if (response['success']) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: const Row(
-                children: [
-                  Icon(Icons.check_circle, color: Colors.white),
-                  SizedBox(width: 8),
-                  Text('Review deleted successfully'),
-                ],
-              ),
-              backgroundColor: Colors.green,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-            ),
-          );
-          await _loadMyReviews();
-        } else {
-          throw Exception(response['message'] ?? 'Failed to delete review');
-        }
-      } catch (e) {
+      final success = await reviewService.deleteReview(review.id);
+      
+      if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content:
-                Text('Error: ${e.toString().replaceAll('Exception: ', '')}'),
-            backgroundColor: Colors.red,
-            behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+            content: Row(
+              children: [
+                Icon(Icons.check_circle, color: Colors.white),
+                const SizedBox(width: 8),
+                Text(success 
+                    ? 'Review deleted successfully' 
+                    : 'Failed to delete review'),
+              ],
             ),
+            backgroundColor: success ? Colors.green : Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
           ),
         );
       }
@@ -659,8 +480,7 @@ class _EditReviewDialogState extends State<_EditReviewDialog> {
   @override
   void initState() {
     super.initState();
-    _commentController =
-        TextEditingController(text: widget.review.comment ?? '');
+    _commentController = TextEditingController(text: widget.review.comment ?? '');
     _rating = widget.review.rating;
   }
 
@@ -729,6 +549,86 @@ class _EditReviewDialogState extends State<_EditReviewDialog> {
           child: const Text('Update'),
         ),
       ],
+    );
+  }
+}
+
+class EmptyReviewsWidget extends StatelessWidget {
+  final String title;
+  final String subtitle;
+  final IconData icon;
+  final String? actionText;
+  final VoidCallback? onAction;
+
+  const EmptyReviewsWidget({
+    super.key,
+    required this.title,
+    required this.subtitle,
+    required this.icon,
+    this.actionText,
+    this.onAction,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(32),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade100,
+                borderRadius: BorderRadius.circular(20),
+              ),
+              child: Icon(
+                icon,
+                size: 64,
+                color: Colors.grey.shade400,
+              ),
+            ),
+            const SizedBox(height: 24),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+                color: Colors.grey.shade700,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              subtitle,
+              style: TextStyle(
+                fontSize: 16,
+                color: Colors.grey.shade600,
+              ),
+              textAlign: TextAlign.center,
+            ),
+            if (actionText != null && onAction != null) ...[
+              const SizedBox(height: 24),
+              ElevatedButton.icon(
+                onPressed: onAction,
+                icon: const Icon(Icons.arrow_forward),
+                label: Text(actionText!),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 24,
+                    vertical: 12,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
     );
   }
 }

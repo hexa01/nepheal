@@ -40,7 +40,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
 
   Future<void> _loadData() async {
     final doctorService = Provider.of<DoctorService>(context, listen: false);
-    
+
     setState(() {
       _error = null;
     });
@@ -66,8 +66,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
 
     try {
       final doctorService = Provider.of<DoctorService>(context, listen: false);
-      
-      await doctorService.getDoctors(
+      final filteredDoctors = await doctorService.getDoctors(
         specializationId: _selectedSpecializationId,
         search: _searchQuery.isEmpty ? null : _searchQuery,
         forceRefresh: true, // Force refresh for filtered results
@@ -96,10 +95,22 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
   Widget build(BuildContext context) {
     return Consumer<DoctorService>(
       builder: (context, doctorService, child) {
-        final doctors = doctorService.allDoctors;
+        final allDoctors = doctorService.allDoctors;
+
+        final doctors = allDoctors.where((doctor) {
+          final matchesSpecialization = _selectedSpecializationId == null ||
+              doctor.specializationId == _selectedSpecializationId;
+
+          final matchesSearch = _searchQuery.isEmpty ||
+              doctor.name.toLowerCase().contains(_searchQuery.toLowerCase());
+
+          return matchesSpecialization && matchesSearch;
+        }).toList();
+
         final specializations = doctorService.specializations;
-        final isLoading = doctorService.isDoctorsLoading && !doctorService.hasCachedDoctors;
-        
+        final isLoading =
+            doctorService.isDoctorsLoading && !doctorService.hasCachedDoctors;
+
         return Scaffold(
           appBar: AppBar(
             title: const Text('Find Doctors'),
@@ -129,10 +140,12 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                       controller: _searchController,
                       decoration: InputDecoration(
                         hintText: 'Search doctors by name...',
-                        prefixIcon: const Icon(Icons.search, color: Colors.blue),
+                        prefixIcon:
+                            const Icon(Icons.search, color: Colors.blue),
                         suffixIcon: _searchQuery.isNotEmpty
                             ? IconButton(
-                                icon: const Icon(Icons.clear, color: Colors.grey),
+                                icon:
+                                    const Icon(Icons.clear, color: Colors.grey),
                                 onPressed: () {
                                   _searchController.clear();
                                   setState(() {
@@ -202,7 +215,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                     child: Row(
                                       children: [
                                         Icon(Icons.all_inclusive,
-                                            color: Colors.grey.shade600, size: 20),
+                                            color: Colors.grey.shade600,
+                                            size: 20),
                                         const SizedBox(width: 8),
                                         const Text('All Specializations'),
                                       ],
@@ -249,8 +263,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                             ),
                             child: IconButton(
                               onPressed: _clearFilters,
-                              icon:
-                                  Icon(Icons.clear_all, color: Colors.red.shade600),
+                              icon: Icon(Icons.clear_all,
+                                  color: Colors.red.shade600),
                               tooltip: 'Clear filters',
                             ),
                           ),
@@ -285,8 +299,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                               ),
                               child: Text(
                                 specializations
-                                    .firstWhere(
-                                        (s) => s.id == _selectedSpecializationId)
+                                    .firstWhere((s) =>
+                                        s.id == _selectedSpecializationId)
                                     .name,
                                 style: TextStyle(
                                   fontSize: 10,
@@ -392,7 +406,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                               _searchQuery.isNotEmpty
                                           ? 'Try adjusting your filters or search'
                                           : 'Check back later for available doctors',
-                                      style: TextStyle(color: Colors.grey.shade500),
+                                      style: TextStyle(
+                                          color: Colors.grey.shade500),
                                       textAlign: TextAlign.center,
                                     ),
                                     if (_selectedSpecializationId != null ||
@@ -430,12 +445,12 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
     return Consumer<DoctorService>(
       builder: (context, doctorService, child) {
         final rating = doctorService.getDoctorRating(doctor.id);
-        
+
         // If no rating cached, try to load it
         if (rating == null) {
           doctorService.loadDoctorRating(doctor.id);
         }
-        
+
         return Card(
           margin: const EdgeInsets.only(bottom: 16),
           elevation: 4,
@@ -498,8 +513,7 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                 ),
                                 const SizedBox(width: 8),
                                 // Compact Rating Display
-                                if (rating != null &&
-                                    rating.totalReviews > 0)
+                                if (rating != null && rating.totalReviews > 0)
                                   Container(
                                     padding: const EdgeInsets.symmetric(
                                       horizontal: 6,
@@ -508,8 +522,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.amber.shade50,
                                       borderRadius: BorderRadius.circular(10),
-                                      border:
-                                          Border.all(color: Colors.amber.shade200),
+                                      border: Border.all(
+                                          color: Colors.amber.shade200),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
@@ -541,8 +555,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                                     decoration: BoxDecoration(
                                       color: Colors.grey.shade100,
                                       borderRadius: BorderRadius.circular(10),
-                                      border:
-                                          Border.all(color: Colors.grey.shade300),
+                                      border: Border.all(
+                                          color: Colors.grey.shade300),
                                     ),
                                     child: Text(
                                       'New',
@@ -629,7 +643,8 @@ class _DoctorsListScreenState extends State<DoctorsListScreen> {
                   if (doctor.phone != null && doctor.phone!.isNotEmpty) ...[
                     Row(
                       children: [
-                        Icon(Icons.phone, size: 16, color: Colors.grey.shade600),
+                        Icon(Icons.phone,
+                            size: 16, color: Colors.grey.shade600),
                         const SizedBox(width: 8),
                         Text(
                           doctor.phone!,

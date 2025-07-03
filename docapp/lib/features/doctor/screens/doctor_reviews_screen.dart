@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/services/review_service.dart';
 import '../../../shared/models/review.dart';
 
 class DoctorReviewsScreen extends StatefulWidget {
@@ -10,21 +12,21 @@ class DoctorReviewsScreen extends StatefulWidget {
 }
 
 class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
-  List<Review> _reviews = [];
-  List<Review> _filteredReviews = [];
-  bool _isLoading = true;
-  String? _error;
-  
-  // Filter and sort options
+  // UI filter state variables
   int? _selectedRating;
   String _sortBy = 'newest';
   String _searchQuery = '';
   final TextEditingController _searchController = TextEditingController();
-  bool _showFilters = false; // Add this for collapsible filters
+  bool _showFilters = false;
 
-  // Stats
-  double _averageRating = 0.0;
-  int _totalReviews = 0;
+  // Local data storage
+  List<Review> _allDoctorReviews = [];
+  List<Review> _filteredReviews = [];
+  
+  // Current doctor data
+  int? _currentDoctorId;
+  bool _isInitialLoading = true;
+  String? _error;
 
   @override
   void initState() {
@@ -40,7 +42,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
 
   Future<void> _loadReviews() async {
     setState(() {
-      _isLoading = true;
+      _isInitialLoading = true;
       _error = null;
     });
 
@@ -48,27 +50,24 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
       // Get current doctor's ID first
       final doctorProfile = await ApiService.getDoctorProfile();
       final doctorId = doctorProfile['data']['doctor']['doctor_id'];
+      
+      setState(() {
+        _currentDoctorId = doctorId;
+      });
 
-      // Load reviews and stats
-      final reviewsResponse = await ApiService.getDoctorReviews(doctorId: doctorId);
-      final statsResponse = await ApiService.getDoctorRatingStats(doctorId);
+      if (mounted) {
+        final reviewService = Provider.of<ReviewService>(context, listen: false);
+        
+        // Load reviews and rating stats
+        final reviews = await reviewService.getDoctorReviews(doctorId: doctorId);
+        await reviewService.loadDoctorRating(doctorId);
 
-      if (reviewsResponse['success'] && statsResponse['success']) {
         setState(() {
-          _reviews = (reviewsResponse['data']['reviews'] as List)
-              .map((json) => Review.fromJson(json))
-              .toList();
-          _filteredReviews = List.from(_reviews);
-          
-          // Update stats
-          _totalReviews = statsResponse['data']['total_reviews'];
-          _averageRating = (statsResponse['data']['average_rating'] as num).toDouble();
+          _allDoctorReviews = reviews;
         });
+
+        // Apply filters after loading
         _applyFilters();
-      } else {
-        setState(() {
-          _error = reviewsResponse['message'] ?? 'Failed to load reviews';
-        });
       }
     } catch (e) {
       setState(() {
@@ -76,14 +75,14 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
       });
     } finally {
       setState(() {
-        _isLoading = false;
+        _isInitialLoading = false;
       });
     }
   }
 
   void _applyFilters() {
     setState(() {
-      _filteredReviews = _reviews.where((review) {
+      _filteredReviews = _allDoctorReviews.where((review) {
         // Rating filter
         if (_selectedRating != null && review.rating != _selectedRating) {
           return false;
@@ -127,39 +126,91 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
       _searchQuery = '';
       _searchController.clear();
       _sortBy = 'newest';
-      _showFilters = false; // Hide filters after clearing
+      _showFilters = false;
     });
     _applyFilters();
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey.shade50,
-      appBar: AppBar(
-        title: const Text('My Reviews'),
-        backgroundColor: Colors.green,
-        foregroundColor: Colors.white,
-        elevation: 0,
-      ),
-      body: Column(
-        children: [
-          // Compact Stats Header
-          _buildCompactStats(),
-          
-          // Filters Section
-          _buildFiltersSection(),
-          
-          // Reviews List
-          Expanded(
-            child: _buildReviewsList(),
+    if (_isInitialLoading) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text('My Reviews'),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: const Center(child: CircularProgressIndicator()),
+      );
+    }
+
+    if (_error != null) {
+      return Scaffold(
+        backgroundColor: Colors.grey.shade50,
+        appBar: AppBar(
+          title: const Text('My Reviews'),
+          backgroundColor: Colors.green,
+          foregroundColor: Colors.white,
+          elevation: 0,
+        ),
+        body: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 48, color: Colors.red.shade400),
+              const SizedBox(height: 16),
+              Text(_error!, style: const TextStyle(color: Colors.grey)),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _loadReviews,
+                child: const Text('Retry'),
+              ),
+            ],
           ),
-        ],
-      ),
+        ),
+      );
+    }
+
+    return Consumer<ReviewService>(
+      builder: (context, reviewService, child) {
+        final isLoading = reviewService.isLoadingDoctorReviews;
+        final ratingStats = _currentDoctorId != null 
+            ? reviewService.getDoctorRating(_currentDoctorId!)
+            : null;
+        
+        return Scaffold(
+          backgroundColor: Colors.grey.shade50,
+          appBar: AppBar(
+            title: const Text('My Reviews'),
+            backgroundColor: Colors.green,
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+          body: Column(
+            children: [
+              // Compact Stats Header
+              _buildCompactStats(ratingStats),
+              
+              // Filters Section
+              _buildFiltersSection(),
+              
+              // Reviews List
+              Expanded(
+                child: _buildReviewsList(isLoading),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildCompactStats() {
+  Widget _buildCompactStats(DoctorRatingStats? ratingStats) {
+    final averageRating = ratingStats?.averageRating ?? 0.0;
+    final totalReviews = ratingStats?.totalReviews ?? 0;
+    
     return Container(
       margin: const EdgeInsets.all(16),
       padding: const EdgeInsets.all(16),
@@ -186,7 +237,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                     Icon(Icons.star, color: Colors.amber, size: 20),
                     const SizedBox(width: 4),
                     Text(
-                      _averageRating.toStringAsFixed(1),
+                      averageRating.toStringAsFixed(1),
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -217,7 +268,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
             child: Column(
               children: [
                 Text(
-                  _totalReviews.toString(),
+                  totalReviews.toString(),
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
@@ -361,7 +412,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                     Expanded(
                       child: DropdownButtonFormField<int?>(
                         value: _selectedRating,
-                        isExpanded: true, // This prevents overflow
+                        isExpanded: true,
                         decoration: InputDecoration(
                           labelText: 'Rating',
                           prefixIcon: Icon(Icons.star, size: 16, color: Colors.amber),
@@ -377,7 +428,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                             child: Text('All', overflow: TextOverflow.ellipsis),
                           ),
                           ...List.generate(5, (index) {
-                            final rating = 5 - index; // Show 5 to 1
+                            final rating = 5 - index;
                             return DropdownMenuItem<int?>(
                               value: rating,
                               child: Text('$rating★', overflow: TextOverflow.ellipsis),
@@ -399,7 +450,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                     Expanded(
                       child: DropdownButtonFormField<String>(
                         value: _sortBy,
-                        isExpanded: true, // This prevents overflow
+                        isExpanded: true,
                         decoration: InputDecoration(
                           labelText: 'Sort',
                           prefixIcon: Icon(Icons.sort, size: 16, color: Colors.blue),
@@ -459,7 +510,7 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
                               const SizedBox(width: 8),
                               Expanded(
                                 child: Text(
-                                  'Showing ${_filteredReviews.length} of $_totalReviews reviews',
+                                  'Showing ${_filteredReviews.length} of ${_allDoctorReviews.length} reviews',
                                   style: TextStyle(
                                     fontSize: 12,
                                     color: Colors.blue.shade700,
@@ -499,29 +550,9 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     );
   }
 
-  Widget _buildReviewsList() {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
-
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 48, color: Colors.grey.shade400),
-            const SizedBox(height: 16),
-            Text(_error!, style: const TextStyle(color: Colors.grey)),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _loadReviews,
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
+  Widget _buildReviewsList(bool isLoading) {
+    if (isLoading && _filteredReviews.isEmpty) {
+      return const Center(child: CircularProgressIndicator());
     }
 
     if (_filteredReviews.isEmpty) {
@@ -550,7 +581,21 @@ class _DoctorReviewsScreenState extends State<DoctorReviewsScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _loadReviews,
+      onRefresh: () async {
+        final reviewService = Provider.of<ReviewService>(context, listen: false);
+        if (_currentDoctorId != null) {
+          final reviews = await reviewService.getDoctorReviews(
+            doctorId: _currentDoctorId!, 
+            forceRefresh: true
+          );
+          await reviewService.loadDoctorRating(_currentDoctorId!);
+          
+          setState(() {
+            _allDoctorReviews = reviews;
+          });
+          _applyFilters();
+        }
+      },
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
         itemCount: _filteredReviews.length,

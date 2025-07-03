@@ -23,7 +23,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   String? _error;
   String? _doctorBio;
 
-  // ✅ ADD: Variables to store rating data
+  // Variables to store rating data
   double _averageRating = 0.0;
   int _totalReviews = 0;
   int _totalPatients = 0;
@@ -89,8 +89,6 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   }
 
   int _calculateTotalPatients() {
-    // This could be calculated from completed appointments
-    // For now, return a reasonable estimate or fetch from API
     return _totalReviews > 0 ? (_totalReviews * 1.2).round() : 0;
   }
 
@@ -149,7 +147,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           const SizedBox(height: 16),
           ElevatedButton(
             onPressed: () {
-              _loadDoctorData(); // ✅ UPDATED: Reload all data
+              _loadDoctorData(); // Reload all data
             },
             child: const Text('Retry'),
           ),
@@ -258,7 +256,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
                   const SizedBox(height: 16),
 
-                  // ✅ UPDATED: Quick Stats with dynamic data
+                  // Quick Stats with dynamic data
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                     children: [
@@ -281,7 +279,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       _buildStatCard(
                         icon: Icons.work,
                         title:
-                            '8+', // This could also be made dynamic if you have the data
+                            '8+', // This could also be made dynamic if have data
                         subtitle: 'Years',
                         color: Colors.white,
                       ),
@@ -487,7 +485,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               color: color.withValues(alpha: 0.8),
             ),
             textAlign:
-                TextAlign.center, // ✅ ADD: Center align for better layout
+                TextAlign.center,
           ),
         ],
       ),

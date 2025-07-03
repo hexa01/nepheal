@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/models/message.dart';
-import '../../../shared/services/api_service.dart';
+import '../../../shared/services/message_service.dart';
 import 'message_detail_screen.dart';
 import '../../../shared/widgets/exit_wrapper_widget.dart';
 
@@ -12,9 +13,6 @@ class PatientMessagesScreen extends StatefulWidget {
 }
 
 class _PatientMessagesScreenState extends State<PatientMessagesScreen> {
-  Map<String, List<PatientMessage>> _groupedMessages = {};
-  bool _isLoading = true;
-  String? _error;
   Set<String> _expandedDoctors = <String>{};
 
   @override
@@ -24,72 +22,8 @@ class _PatientMessagesScreenState extends State<PatientMessagesScreen> {
   }
 
   Future<void> _loadMessages() async {
-    try {
-      setState(() {
-        _isLoading = true;
-        _error = null;
-      });
-
-      final response = await ApiService.getPatientMessages();
-
-      if (response['success'] == true) {
-        final List<dynamic> data = response['data'] ?? [];
-        final List<PatientMessage> messages = [];
-
-        for (var json in data) {
-          try {
-            final message = PatientMessage.fromJson(json);
-            messages.add(message);
-          } catch (e) {
-            continue;
-          }
-        }
-
-        final Map<String, List<PatientMessage>> grouped = {};
-        for (var message in messages) {
-          try {
-            final doctorKey =
-                '${message.appointment.doctor.name}_${message.appointment.doctor.specialization}';
-            if (!grouped.containsKey(doctorKey)) {
-              grouped[doctorKey] = [];
-            }
-            grouped[doctorKey]!.add(message);
-          } catch (e) {
-            continue;
-          }
-        }
-
-        grouped.forEach((key, messageList) {
-          try {
-            messageList.sort((a, b) {
-              try {
-                return b.createdAt.compareTo(a.createdAt);
-              } catch (e) {
-                return 0;
-              }
-            });
-          } catch (e) {
-            // Continue with unsorted list
-          }
-        });
-
-        setState(() {
-          _groupedMessages = grouped;
-          _isLoading = false;
-        });
-      } else {
-        throw Exception(response['message'] ?? 'Failed to load messages');
-      }
-    } catch (e) {
-      setState(() {
-        _error = e.toString();
-        _isLoading = false;
-      });
-    }
-  }
-
-  Future<void> _refreshMessages() async {
-    await _loadMessages();
+    final messageService = Provider.of<MessageService>(context, listen: false);
+    await messageService.getGroupedPatientMessages();
   }
 
   void _toggleDoctorExpansion(String doctorKey) {
@@ -104,26 +38,33 @@ class _PatientMessagesScreenState extends State<PatientMessagesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return ExitWrapper(
-      child: Scaffold(
-        appBar: AppBar(
-          title: const Text('Doctor Messages'),
-          backgroundColor: Colors.blue,
-          foregroundColor: Colors.white,
-          actions: [
-            IconButton(
-              icon: const Icon(Icons.refresh),
-              onPressed: _refreshMessages,
+    return Consumer<MessageService>(
+      builder: (context, messageService, child) {
+        final groupedMessages = messageService.groupedMessages;
+        final isLoading = messageService.isLoadingPatientMessages && !messageService.hasCachedPatientMessages;
+        
+        return ExitWrapper(
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Doctor Messages'),
+              backgroundColor: Colors.blue,
+              foregroundColor: Colors.white,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: () => messageService.refreshAllData('patient'),
+                ),
+              ],
             ),
-          ],
-        ),
-        body: _buildBody(),
-      ),
+            body: _buildBody(groupedMessages, isLoading),
+          ),
+        );
+      },
     );
   }
 
-  Widget _buildBody() {
-    if (_isLoading) {
+  Widget _buildBody(Map<String, List<PatientMessage>> groupedMessages, bool isLoading) {
+    if (isLoading) {
       return const Center(
         child: CircularProgressIndicator(
           color: Colors.green,
@@ -131,51 +72,7 @@ class _PatientMessagesScreenState extends State<PatientMessagesScreen> {
       );
     }
 
-    if (_error != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(
-              Icons.error_outline,
-              size: 64,
-              color: Colors.red[300],
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'Error loading messages',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.grey[600],
-              ),
-            ),
-            const SizedBox(height: 8),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 32),
-              child: Text(
-                _error!,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: Colors.grey[500],
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton(
-              onPressed: _refreshMessages,
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.green,
-                foregroundColor: Colors.white,
-              ),
-              child: const Text('Retry'),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_groupedMessages.isEmpty) {
+    if (groupedMessages.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -208,14 +105,17 @@ class _PatientMessagesScreenState extends State<PatientMessagesScreen> {
     }
 
     return RefreshIndicator(
-      onRefresh: _refreshMessages,
+      onRefresh: () async {
+        final messageService = Provider.of<MessageService>(context, listen: false);
+        await messageService.refreshAllData('patient');
+      },
       color: Colors.green,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _groupedMessages.length,
+        itemCount: groupedMessages.length,
         itemBuilder: (context, index) {
-          final doctorKey = _groupedMessages.keys.elementAt(index);
-          final doctorMessages = _groupedMessages[doctorKey]!;
+          final doctorKey = groupedMessages.keys.elementAt(index);
+          final doctorMessages = groupedMessages[doctorKey]!;
           final doctor = doctorMessages.first.appointment.doctor;
           final isExpanded = _expandedDoctors.contains(doctorKey);
 

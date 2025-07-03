@@ -3,12 +3,20 @@ import '../models/user.dart';
 import '../../core/storage/storage_service.dart';
 import 'api_service.dart';
 import 'doctor_service.dart';
+import 'appointment_service.dart';
+import 'message_service.dart';
+import 'review_service.dart';
 
 class AuthService extends ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _error;
+  
+  // Service references
   DoctorService? _doctorService;
+  AppointmentService? _appointmentService;
+  MessageService? _messageService;
+  ReviewService? _reviewService;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
@@ -21,13 +29,34 @@ class AuthService extends ChangeNotifier {
     if (token != null) {
       final userId = StorageService.getUserId();
       if (userId != null) {
-        notifyListeners();
+        // Load user data from storage
+        final userData = StorageService.getUserData();
+        if (userData != null) {
+          _user = User.fromJson(userData);
+          notifyListeners();
+          
+          // Load background data for authenticated user
+          _loadBackgroundData();
+        }
       }
     }
   }
 
+  // Set service references
   void setDoctorService(DoctorService doctorService) {
     _doctorService = doctorService;
+  }
+
+  void setAppointmentService(AppointmentService appointmentService) {
+    _appointmentService = appointmentService;
+  }
+
+  void setMessageService(MessageService messageService) {
+    _messageService = messageService;
+  }
+
+  void setReviewService(ReviewService reviewService) {
+    _reviewService = reviewService;
   }
 
   Future<bool> login(String email, String password) async {
@@ -48,11 +77,10 @@ class AuthService extends ChangeNotifier {
         await StorageService.saveUserData(userData);
 
         _user = User.fromJson(userData);
-
-        if (_user?.role == 'patient') {
-          _doctorService?.loadInitialData();
-        }
-
+        
+        // 🆕 Load background data based on user role
+        _loadBackgroundData();
+        
         _setLoading(false);
         return true;
       } else {
@@ -72,7 +100,6 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String password,
     required String passwordConfirmation,
-    // required String role,
     required String gender,
     String? phone,
     String? address,
@@ -102,11 +129,10 @@ class AuthService extends ChangeNotifier {
         await StorageService.saveUserData(userData);
 
         _user = User.fromJson(userData);
-
-        if (_user?.role == 'patient') {
-          _doctorService?.loadInitialData();
-        }
-
+        
+        // 🆕 Load background data for new patient
+        _loadBackgroundData();
+        
         _setLoading(false);
         return true;
       } else {
@@ -134,9 +160,74 @@ class AuthService extends ChangeNotifier {
     await StorageService.removeToken();
     await StorageService.clearUserData();
     _user = null;
-    _doctorService?.clearCache();
-
+    
+    // 🆕 Clear all service caches when logging out
+    _clearAllCaches();
+    
     _setLoading(false);
+  }
+
+  /// Load background data based on user role
+  void _loadBackgroundData() {
+    if (_user == null) return;
+    
+    final userRole = _user!.role;
+    
+    try {
+      // Load data based on role
+      if (userRole == 'patient') {
+        _doctorService?.loadInitialData();
+        _appointmentService?.loadInitialData(userRole);
+        _messageService?.loadInitialData(userRole);
+        _reviewService?.loadInitialData(userRole);
+      } else if (userRole == 'doctor') {
+        _appointmentService?.loadInitialData(userRole);
+        _messageService?.loadInitialData(userRole);
+        _reviewService?.loadInitialData(userRole);
+      }
+      
+      debugPrint('🔄 Loading background data for $userRole...');
+    } catch (e) {
+      debugPrint('Error loading background data: $e');
+    }
+  }
+
+  /// Clear all service caches
+  void _clearAllCaches() {
+    _doctorService?.clearCache();
+    _appointmentService?.clearCache();
+    _messageService?.clearCache();
+    _reviewService?.clearCache();
+    
+    debugPrint('🧹 Cleared all caches');
+  }
+
+  /// Refresh all data for current user
+  Future<void> refreshAllData() async {
+    if (_user == null) return;
+    
+    final userRole = _user!.role;
+    
+    try {
+      if (userRole == 'patient') {
+        await Future.wait([
+          _doctorService?.refreshAllData() ?? Future.value(),
+          _appointmentService?.refreshAllData(userRole) ?? Future.value(),
+          _messageService?.refreshAllData(userRole) ?? Future.value(),
+          _reviewService?.refreshAllData(userRole) ?? Future.value(),
+        ]);
+      } else if (userRole == 'doctor') {
+        await Future.wait([
+          _appointmentService?.refreshAllData(userRole) ?? Future.value(),
+          _messageService?.refreshAllData(userRole) ?? Future.value(),
+          _reviewService?.refreshAllData(userRole) ?? Future.value(),
+        ]);
+      }
+      
+      debugPrint('🔄 Refreshed all data for $userRole');
+    } catch (e) {
+      debugPrint('Error refreshing all data: $e');
+    }
   }
 
   // NEW: Update user profile photo
@@ -144,7 +235,7 @@ class AuthService extends ChangeNotifier {
     if (_user != null) {
       _user = _user!.copyWith(
         profilePhotoUrl: newPhotoUrl,
-        updateProfilePhotoUrl: true, // ✅ ADD THIS FLAG
+        updateProfilePhotoUrl: true,
       );
       notifyListeners();
     }

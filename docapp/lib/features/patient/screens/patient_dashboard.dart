@@ -20,7 +20,6 @@ class _PatientDashboardState extends State<PatientDashboard> {
   int _currentIndex = 0;
 
   void _changeTab(int index) {
-    // Add bounds checking to prevent RangeError
     if (index >= 0 && index < _screens.length) {
       setState(() {
         _currentIndex = index;
@@ -110,7 +109,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     try {
       final doctorService = Provider.of<DoctorService>(context, listen: false);
       
-      // Check if we have cached specializations
+      // Check for cached specializations
       if (doctorService.hasCachedSpecializations) {
         setState(() {
           _specializations = doctorService.specializations;

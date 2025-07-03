@@ -9,28 +9,30 @@ class DoctorService extends ChangeNotifier {
   List<Doctor> _allDoctors = [];
   List<Specialization> _specializations = [];
   Map<int, DoctorRatingStats> _doctorRatings = {};
-  
+
   // Loading states
   bool _isDoctorsLoading = false;
   bool _isSpecializationsLoading = false;
   bool _isRatingsLoading = false;
-  
+
   // Cache timestamps for refresh logic
   DateTime? _doctorsLastLoaded;
   DateTime? _specializationsLastLoaded;
-  
+
   // Cache validity duration (5 minutes)
   static const Duration _cacheValidDuration = Duration(minutes: 5);
 
   // Getters
   List<Doctor> get allDoctors => List.unmodifiable(_allDoctors);
-  List<Specialization> get specializations => List.unmodifiable(_specializations);
-  Map<int, DoctorRatingStats> get doctorRatings => Map.unmodifiable(_doctorRatings);
-  
+  List<Specialization> get specializations =>
+      List.unmodifiable(_specializations);
+  Map<int, DoctorRatingStats> get doctorRatings =>
+      Map.unmodifiable(_doctorRatings);
+
   bool get isDoctorsLoading => _isDoctorsLoading;
   bool get isSpecializationsLoading => _isSpecializationsLoading;
   bool get isRatingsLoading => _isRatingsLoading;
-  
+
   bool get hasCachedDoctors => _allDoctors.isNotEmpty;
   bool get hasCachedSpecializations => _specializations.isNotEmpty;
 
@@ -42,7 +44,8 @@ class DoctorService extends ChangeNotifier {
 
   bool get isSpecializationsCacheValid {
     if (_specializationsLastLoaded == null) return false;
-    return DateTime.now().difference(_specializationsLastLoaded!) < _cacheValidDuration;
+    return DateTime.now().difference(_specializationsLastLoaded!) <
+        _cacheValidDuration;
   }
 
   /// Load initial data after login (background operation)
@@ -63,14 +66,13 @@ class DoctorService extends ChangeNotifier {
     bool forceRefresh = false,
   }) async {
     // If no filters and cache is valid, return cached data
-    if (!forceRefresh && 
-        specializationId == null && 
-        (search?.isEmpty ?? true) && 
-        hasCachedDoctors && 
+    if (!forceRefresh &&
+        specializationId == null &&
+        (search?.isEmpty ?? true) &&
+        hasCachedDoctors &&
         isDoctorsCacheValid) {
       return _allDoctors;
     }
-
     // If filters are applied or cache is invalid, fetch from API
     return await _loadDoctors(
       specializationId: specializationId,
@@ -106,7 +108,7 @@ class DoctorService extends ChangeNotifier {
   /// Load ratings for multiple doctors
   Future<void> loadDoctorRatings(List<int> doctorIds) async {
     if (_isRatingsLoading) return;
-    
+
     _isRatingsLoading = true;
     notifyListeners();
 
@@ -114,7 +116,8 @@ class DoctorService extends ChangeNotifier {
       // Load ratings in batches of 3 to avoid overwhelming the server
       for (int i = 0; i < doctorIds.length; i += 3) {
         final batch = doctorIds.skip(i).take(3);
-        final futures = batch.map((doctorId) => _loadSingleDoctorRating(doctorId));
+        final futures =
+            batch.map((doctorId) => _loadSingleDoctorRating(doctorId));
         await Future.wait(futures);
       }
     } catch (e) {
@@ -136,30 +139,28 @@ class DoctorService extends ChangeNotifier {
     String? search,
   }) async {
     if (_isDoctorsLoading) return _allDoctors;
-    
+
     _isDoctorsLoading = true;
     notifyListeners();
-
     try {
       final response = await ApiService.getDoctors(
         specializationId: specializationId,
         search: search,
       );
-
       if (response['success']) {
         final doctorsData = response['data'] as List;
-        final doctors = doctorsData.map((json) => Doctor.fromListJson(json)).toList();
-        
+        final doctors =
+            doctorsData.map((json) => Doctor.fromListJson(json)).toList();
         // Only cache if no filters applied
         if (specializationId == null && (search?.isEmpty ?? true)) {
           _allDoctors = doctors;
           _doctorsLastLoaded = DateTime.now();
-          
+
           // Load ratings for these doctors in background
           final doctorIds = doctors.map((d) => d.id).toList();
           unawaited(loadDoctorRatings(doctorIds));
         }
-        
+
         notifyListeners();
         return doctors;
       }
@@ -176,7 +177,7 @@ class DoctorService extends ChangeNotifier {
   /// Private method to load specializations from API
   Future<void> _loadSpecializations() async {
     if (_isSpecializationsLoading || isSpecializationsCacheValid) return;
-    
+
     _isSpecializationsLoading = true;
     notifyListeners();
 

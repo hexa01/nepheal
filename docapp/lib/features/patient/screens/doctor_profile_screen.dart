@@ -584,7 +584,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               ),
                             ),
                             Text(
-                              '\$${doctor.hourlyRate.toInt()}/session',
+                              'Rs.${(doctor.hourlyRate/2).toInt()}/session',
                               style: TextStyle(
                                 fontSize: 20,
                                 fontWeight: FontWeight.bold,

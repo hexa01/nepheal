@@ -113,12 +113,10 @@ class ApiService {
       if (queryParams.isNotEmpty) {
         uri = uri.replace(queryParameters: queryParams);
       }
-
       final response = await http.get(
         uri,
         headers: _getHeaders(),
       );
-
       return _handleResponse(response);
     } catch (e) {
       throw Exception('Failed to fetch doctors: $e');
