@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'core/storage/storage_service.dart';
 import 'shared/services/auth_service.dart';
+import 'shared/services/doctor_service.dart';
 import 'features/auth/screens/login_screen.dart';
 import 'shared/widgets/exit_wrapper_widget.dart';
 
@@ -11,25 +12,35 @@ void main() async {
   runApp(const MyApp());
 }
 
-class MyApp extends StatelessWidget {//statelesswidget
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
-//for overriding
+
   @override
   Widget build(BuildContext context) {
-    return ChangeNotifierProvider(
-      create: (context) => AuthService(),
-      child: ExitWrapper(  // Wrap here
-        child: MaterialApp(
-          title: 'Nepheal',
-          theme: ThemeData(
-            primarySwatch: Colors.blue,
-            useMaterial3: true,
-          ),
-          home: const LoginScreen(),
-          debugShowCheckedModeBanner: false,
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => AuthService()),
+        ChangeNotifierProvider(create: (context) => DoctorService()),
+      ],
+      child: ExitWrapper(
+        child: Consumer<AuthService>(
+          builder: (context, authService, child) {
+            final doctorService =
+                Provider.of<DoctorService>(context, listen: false);
+            authService.setDoctorService(doctorService);
+
+            return MaterialApp(
+              title: 'Nepheal',
+              theme: ThemeData(
+                primarySwatch: Colors.blue,
+                useMaterial3: true,
+              ),
+              home: const LoginScreen(),
+              debugShowCheckedModeBanner: false,
+            );
+          },
         ),
       ),
     );
   }
 }
-

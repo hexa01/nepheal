@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 
 class Charts extends ChartWidget
 {
-    protected static ?string $heading = 'Bar Chart - Completed and Missed Appointments';
+    protected static ?string $heading = 'Completed and Missed Appointments';
     // protected static ?int $sort = 2;
 
     protected static ?int $sort = 1;

@@ -63,7 +63,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
       email: _emailController.text.trim(),
       password: _passwordController.text,
       passwordConfirmation: _confirmPasswordController.text,
-      role: _selectedRole,
       gender: _selectedGender,
       phone: _phoneController.text.trim().isEmpty
           ? null

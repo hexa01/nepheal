@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
 import '../../../shared/services/api_service.dart';
+import '../../../shared/services/doctor_service.dart';
 import '../../../shared/models/specialization.dart';
 import 'doctors_list_screen.dart';
 import 'patient_profile_screen.dart';
@@ -106,19 +108,23 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
     });
 
     try {
-      final response = await ApiService.getSpecializations();
-      if (response['success']) {
-        final specializationsData = response['data'] as List<dynamic>;
+      final doctorService = Provider.of<DoctorService>(context, listen: false);
+      
+      // Check if we have cached specializations
+      if (doctorService.hasCachedSpecializations) {
         setState(() {
-          _specializations = specializationsData
-              .map((data) => Specialization.fromJson(data))
-              .toList();
+          _specializations = doctorService.specializations;
+          _isLoading = false;
         });
-      } else {
-        setState(() {
-          _error = response['message'] ?? 'Failed to load specializations';
-        });
+        return;
       }
+
+      // If no cache, load from API (this will also cache the results)
+      await doctorService.loadSpecializations();
+      
+      setState(() {
+        _specializations = doctorService.specializations;
+      });
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
@@ -211,7 +217,7 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                       color: Colors.black87,
                     ),
                   ),
-                  const SizedBox(height: 1),
+                  const SizedBox(height: 16),
 
                   // Quick Action Cards Grid
                   GridView.count(
@@ -237,9 +243,9 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                         () => widget.onNavigate(2),
                       ),
                       _buildActionCard(
-                        Icons.rate_review,
-                        'Reviews',
-                        'Your feedback',
+                        Icons.message,
+                        'Messages',
+                        'Doctor prescriptions',
                         Colors.purple,
                         () => widget.onNavigate(3),
                       ),
@@ -266,28 +272,35 @@ class _PatientHomeScreenState extends State<PatientHomeScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Specializations Horizontal List
-                  SizedBox(
-                    height: 100,
-                    child: _isLoading
-                        ? const Center(child: CircularProgressIndicator())
-                        : _error != null
-                            ? _buildStaticSpecializationsList()
-                            : _specializations.isEmpty
+                  // Specializations Horizontal List with Consumer
+                  Consumer<DoctorService>(
+                    builder: (context, doctorService, child) {
+                      // Use cached data if available, otherwise show loading or fallback
+                      final specializations = doctorService.hasCachedSpecializations 
+                          ? doctorService.specializations 
+                          : _specializations;
+                      
+                      final isLoading = _isLoading || (doctorService.isSpecializationsLoading && !doctorService.hasCachedSpecializations);
+
+                      return SizedBox(
+                        height: 100,
+                        child: isLoading
+                            ? const Center(child: CircularProgressIndicator())
+                            : _error != null || specializations.isEmpty
                                 ? _buildStaticSpecializationsList()
                                 : ListView.builder(
                                     scrollDirection: Axis.horizontal,
                                     padding: const EdgeInsets.only(right: 8),
-                                    itemCount: _specializations.length,
+                                    itemCount: specializations.length,
                                     itemBuilder: (context, index) {
                                       return Padding(
-                                        padding:
-                                            const EdgeInsets.only(right: 10),
-                                        child: _buildSpecializationCard(
-                                            _specializations[index].name),
+                                        padding: const EdgeInsets.only(right: 10),
+                                        child: _buildSpecializationCard(specializations[index].name),
                                       );
                                     },
                                   ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 20),
 

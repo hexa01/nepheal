@@ -2,11 +2,13 @@ import 'package:flutter/foundation.dart';
 import '../models/user.dart';
 import '../../core/storage/storage_service.dart';
 import 'api_service.dart';
+import 'doctor_service.dart';
 
 class AuthService extends ChangeNotifier {
   User? _user;
   bool _isLoading = false;
   String? _error;
+  DoctorService? _doctorService;
 
   User? get user => _user;
   bool get isLoading => _isLoading;
@@ -17,13 +19,15 @@ class AuthService extends ChangeNotifier {
   Future<void> checkAuthStatus() async {
     final token = StorageService.getToken();
     if (token != null) {
-      // TODO: Verify token with backend or load user data
-      // For now, we'll assume token is valid
       final userId = StorageService.getUserId();
       if (userId != null) {
         notifyListeners();
       }
     }
+  }
+
+  void setDoctorService(DoctorService doctorService) {
+    _doctorService = doctorService;
   }
 
   Future<bool> login(String email, String password) async {
@@ -44,6 +48,11 @@ class AuthService extends ChangeNotifier {
         await StorageService.saveUserData(userData);
 
         _user = User.fromJson(userData);
+
+        if (_user?.role == 'patient') {
+          _doctorService?.loadInitialData();
+        }
+
         _setLoading(false);
         return true;
       } else {
@@ -63,7 +72,7 @@ class AuthService extends ChangeNotifier {
     required String email,
     required String password,
     required String passwordConfirmation,
-    required String role,
+    // required String role,
     required String gender,
     String? phone,
     String? address,
@@ -78,7 +87,7 @@ class AuthService extends ChangeNotifier {
         email: email,
         password: password,
         passwordConfirmation: passwordConfirmation,
-        role: role,
+        role: "patient",
         gender: gender,
         phone: phone,
         address: address,
@@ -93,6 +102,11 @@ class AuthService extends ChangeNotifier {
         await StorageService.saveUserData(userData);
 
         _user = User.fromJson(userData);
+
+        if (_user?.role == 'patient') {
+          _doctorService?.loadInitialData();
+        }
+
         _setLoading(false);
         return true;
       } else {
@@ -120,6 +134,8 @@ class AuthService extends ChangeNotifier {
     await StorageService.removeToken();
     await StorageService.clearUserData();
     _user = null;
+    _doctorService?.clearCache();
+
     _setLoading(false);
   }
 
