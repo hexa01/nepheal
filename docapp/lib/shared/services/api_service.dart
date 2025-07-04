@@ -66,11 +66,20 @@ class ApiService {
       if (address != null) body['address'] = address;
       if (dob != null) body['dob'] = dob.toIso8601String().split('T')[0];
 
-      final response = await http.post(
-        Uri.parse(ApiConstants.register),
-        headers: _getHeaders(includeAuth: false),
-        body: jsonEncode(body),
-      );
+    print('📤 Registration URL: ${ApiConstants.register}');
+    print('📤 Registration body: ${jsonEncode(body)}');
+    print('📤 Headers: ${_getHeaders(includeAuth: false)}');
+
+    final response = await http.post(
+      Uri.parse(ApiConstants.register),
+      headers: _getHeaders(includeAuth: false),
+      body: jsonEncode(body),
+    );
+
+    print('📥 Response status: ${response.statusCode}');
+    print('📥 Response headers: ${response.headers}');
+    print('📥 Response body: ${response.body}');
+
 
       return _handleResponse(response);
     } catch (e) {

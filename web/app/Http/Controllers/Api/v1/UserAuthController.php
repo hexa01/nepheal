@@ -72,11 +72,14 @@ class UserAuthController extends Controller
         $user = User::create([
             'name' => $validated['name'],
             'email' => $validated['email'],
-            'address' => $validated['address'],
+            'address' => $validated['address'] ?? null,
             'role' => $validated['role'],
-            'phone' => $validated['phone'],
+            'phone' => $validated['phone'] ?? null,
+            'gender' => $validated['gender'],
+            'dob' => $validated['dob'] ?? null,
             'password' => Hash::make($validated['password']),
         ]);
+               $token = $user->createToken($user->role)->plainTextToken;
 
         if ($user->role === 'patient') {
             Patient::create([
@@ -87,7 +90,10 @@ class UserAuthController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'User registered successfully',
-            'data' => $user,
+            'data' => [
+                'token' => $token,
+                'user' => $user,  
+            ],
         ], 201);
     }
 
